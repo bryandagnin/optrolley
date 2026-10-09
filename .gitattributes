@@ -1,0 +1,30 @@
+# Normalize all text files to LF in the repo and on checkout.
+* text=auto eol=lf
+
+# Windows scripts that require CRLF to run correctly (includes gradlew.bat).
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# The Gradle wrapper launcher has no extension and must stay LF to run on Linux/macOS.
+gradlew text eol=lf
+
+# Kotlin
+*.kt  text diff=kotlin
+*.kts text diff=kotlin
+
+# Binary assets
+*.png      binary
+*.jpg      binary
+*.jpeg     binary
+*.gif      binary
+*.webp     binary
+*.ico      binary
+*.ttf      binary
+*.otf      binary
+*.pdf      binary
+*.zip      binary
+*.jar      binary
+*.apk      binary
+*.aab      binary
+*.jks      binary
+*.keystore binary

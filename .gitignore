@@ -1,0 +1,52 @@
+# --- Build outputs ---
+build/
+out/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# --- Gradle ---
+.gradle/
+# The wrapper jar is source: without it `gradlew` cannot bootstrap.
+!gradle/wrapper/gradle-wrapper.jar
+
+# --- Kotlin ---
+.kotlin/
+
+# --- Android ---
+# Machine-specific SDK location.
+local.properties
+captures/
+.externalNativeBuild/
+.cxx/
+
+# --- Signing material: never commit ---
+*.jks
+*.keystore
+keystore.properties
+
+# --- Local environment / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- Exported lists and observation logs (personal data, stays local) ---
+/exports/
+
+# --- Logs ---
+*.log
+*.hprof
+
+# --- Editor / OS noise ---
+.idea/
+*.iml
+.vscode/
+*.swp
+Thumbs.db
+.DS_Store
+
+# --- Local tool-path overrides ---
+.tool-paths
+.aider*
