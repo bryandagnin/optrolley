@@ -91,6 +91,8 @@ spec/                     the tiers, in order
 spec/open-questions.md    live register, outside the tiers
 core/                     (planned) Kotlin/JVM: model, presentation, router, simulator
 app/                      (planned) Android: UI, storage, export
+docker/                   the build image: JDK + Android SDK
+compose.yaml              build and emulator services
 ```
 
 `core/` and `app/` do not exist yet. They are created with the Gradle project
@@ -99,10 +101,10 @@ committed in the meantime.
 
 ## Conventions
 
-- **Toolchain: none installed.** No JDK, Gradle or Android SDK on this
-  machine as of 2026-10-09. Setup is staged in `spec/04-design.md` §2: a JDK
-  alone is enough to start on `core/`. Record installed binaries in
-  `~/.tool-paths`.
+- **Toolchain: in containers.** No JDK, Gradle or Android SDK on the host;
+  they live in the image in `docker/`, run through `compose.yaml`
+  (`spec/04-design.md` §2). The host has only Docker and `adb`. Record any
+  host binary in `~/.tool-paths`.
 - **Proposed stack:** Kotlin; `core/` has no Android dependency. See
   `spec/04-design.md` §1 for the reasoning and the case against it.
 - Spec documents carry `**Date:** YYYY-MM-DD`; significant revisions add

@@ -1,0 +1,35 @@
+# Toolchain in containers; see spec/04-design.md §2.
+#
+#   docker compose run --rm build ./gradlew test
+#   docker compose --profile emulator up -d emulator   # needs /dev/kvm
+
+services:
+  build:
+    build: ./docker
+    volumes:
+      - .:/work
+      # The Gradle cache is most of the build's I/O; a bind mount of a
+      # Windows drive is too slow to hold it.
+      - gradle-cache:/root/.gradle
+    # Host-adb route: ADB_SERVER_SOCKET=tcp:host.docker.internal:5037. No
+    # extra_hosts mapping: Rancher Desktop already resolves that name to the
+    # Windows host, and host-gateway would point it at the VM's bridge instead.
+
+  emulator:
+    profiles: [emulator]
+    image: budtmo/docker-android:emulator_14.0
+    devices:
+      - /dev/kvm
+    environment:
+      EMULATOR_DEVICE: "Samsung Galaxy S10"
+      WEB_VNC: "true"
+    ports:
+      # noVNC: watch the emulator at http://localhost:6080
+      - "6080:6080"
+    # adb on 5555 needs no published port: `build` reaches it as emulator:5555.
+
+volumes:
+  gradle-cache:
+    # Fixed name: compose would otherwise prefix the directory name, giving
+    # every worktree its own cold cache.
+    name: optrolley-gradle-cache

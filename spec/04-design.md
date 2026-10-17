@@ -1,6 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
+**Last updated:** 2026-10-18
 
 ---
 
@@ -50,9 +51,16 @@ adds Android tooling rather than avoiding it.
 Library and plugin versions are deliberately not pinned in this document.
 They are pinned at step 1, from whatever is current then.
 
-## 2. Toolchain — not yet installed
+## 2. Toolchain — in containers
 
-Two stages, so the first does not wait for the second.
+The JDK and Android SDK live in a container image, not on the host. That
+keeps the build reproducible for whoever runs it, agents included, and leaves
+the host with only Docker and `adb`, both already installed [evidence:
+Rancher Desktop's Docker 29.5.3 and platform-tools 36.0.2 `adb` in
+`~/.tool-paths`, 2026-10-18].
+
+Two stages, so the first does not wait for the second. Both are the one image
+in `docker/Dockerfile`; stage A simply does not use the SDK.
 
 **Stage A — enough for `:core`.**
 
@@ -62,13 +70,47 @@ Two stages, so the first does not wait for the second.
 
 **Stage B — enough for `:app`.**
 
-- Android SDK: command-line tools, platform-tools, one platform, build-tools.
-  Android Studio installs all of this and is the simplest route; the
-  command-line tools alone are sufficient.
-- Something to run on: an emulator image, or a phone with USB debugging.
-- `ANDROID_HOME` set; SDK path in `local.properties` (ignored by git).
+- Android SDK: command-line tools, platform-tools, one platform, build-tools,
+  installed by `sdkmanager` in the image. `ANDROID_HOME` is set there, so
+  `local.properties` is not needed.
+- Something to run on — below.
 
-Record every installed binary in `~/.tool-paths`, as for the other
+The versions are build arguments, pinned at step 1 like everything else (§1).
+
+`compose.yaml` at the root runs it:
+
+- **`build`** — the source bind-mounted at `/work`. Gradle's cache is a named
+  volume, because a bind mount of a Windows drive is too slow to hold it.
+- **`emulator`** — opt-in (`--profile emulator`). A prebuilt emulator image,
+  `budtmo/docker-android`, watchable in a browser through noVNC on port 6080
+  and reachable from `build` as `emulator:5555` over the compose network.
+
+**Something to run on**, in order of preference:
+
+1. **The emulator container.** Preferred because it lets instrumented tests
+   run unattended, with no phone in the loop. It needs `/dev/kvm`, which
+   needs WSL2 to pass nested virtualisation through. **Not yet working on
+   this machine:** the WSL2 kernel reports `Hyper-V: Nested features: 0x0`
+   and has no `/dev/kvm`, although `nestedVirtualization` defaults to on and
+   the kernel has KVM built as modules [evidence: checked 2026-10-18]. The
+   cause is a Windows update, KB5127648 (installed here 2026-10-14), that
+   breaks nested virtualisation on AMD CPUs; Microsoft has acknowledged it
+   and is working on a fix [microsoft/WSL#41917]. Uninstalling a security
+   update is not worth it for this; route 2 or 3 serves until the fix ships.
+2. **A phone with wireless debugging**, attached by `adb connect` from
+   `build`. Needed for the field trial (step 9) whatever else is chosen.
+3. **The host's `adb`**, with the container as its client: start the server
+   on the host with `adb -a start-server`, and run the container with
+   `ADB_SERVER_SOCKET=tcp:host.docker.internal:5037`. This is the route for a
+   USB-connected phone, or an emulator running on Windows itself. `-a` makes
+   the server listen on every interface, so stop it with `adb kill-server`
+   when done.
+
+Android Studio stays out of the container — a GUI there costs more than it
+saves. If an IDE is wanted, it goes on the host; the container remains the
+build of record.
+
+Record any binary installed on the host in `~/.tool-paths`, as for the other
 toolchains on this machine.
 
 Decide at stage B, not before: application id, display name, minimum Android
@@ -77,9 +119,11 @@ version (Q6).
 ## 3. Layout
 
 ```
-core/    Kotlin/JVM — model, presentation, router, simulator; tests beside
-app/     Android — UI, storage, export; instrumented tests beside
-spec/    the tiers
+core/          Kotlin/JVM — model, presentation, router, simulator; tests beside
+app/           Android — UI, storage, export; instrumented tests beside
+spec/          the tiers
+docker/        the build image (§2)
+compose.yaml   build and emulator services (§2)
 ```
 
 ## 4. Observations (to be designed)
