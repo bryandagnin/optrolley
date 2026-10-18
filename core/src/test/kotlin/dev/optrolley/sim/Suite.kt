@@ -74,21 +74,27 @@ object O18 {
         return failures
     }
 
+    /** The margin is judged over placed pairs only: the rest no router can order (amended O18). */
     private fun margin(what: String, at: List<WalkScore>): List<String> {
-        if (at.isEmpty()) return listOf("$what: no walks to measure")
-        val shown = meanNormalised(at) { it.presented }
-        val floor = meanNormalised(at) { it.floor }
+        if (at.none { it.placedPairs > 0 }) return listOf("$what: no placed pairs to measure")
+        val shown = meanPlaced(at) { it.presentedPlaced }
+        val floor = meanPlaced(at) { it.floorPlaced }
         return if (shown - floor > MARGIN) {
-            listOf("$what: mean normalised disorder ${f(shown)} exceeds noise floor ${f(floor)} by more than $MARGIN")
+            listOf("$what: mean normalised disorder over placed pairs ${f(shown)} exceeds noise floor ${f(floor)} by more than $MARGIN")
         } else {
             emptyList()
         }
     }
 
     /** Mean over walks with any counted pair of [value] as a share of the walk's pairs. */
-    fun meanNormalised(at: List<WalkScore>, value: (WalkScore) -> Double): Double {
-        val counted = at.filter { it.pairs > 0 }
-        return if (counted.isEmpty()) 0.0 else counted.sumOf { value(it) / it.pairs } / counted.size
+    fun meanNormalised(at: List<WalkScore>, value: (WalkScore) -> Double): Double = mean(at, { it.pairs }, value)
+
+    /** The same over placed pairs. */
+    fun meanPlaced(at: List<WalkScore>, value: (WalkScore) -> Double): Double = mean(at, { it.placedPairs }, value)
+
+    private fun mean(at: List<WalkScore>, pairs: (WalkScore) -> Int, value: (WalkScore) -> Double): Double {
+        val counted = at.filter { pairs(it) > 0 }
+        return if (counted.isEmpty()) 0.0 else counted.sumOf { value(it) / pairs(it) } / counted.size
     }
 
     private fun f(x: Double) = String.format(Locale.ROOT, "%.3f", x)

@@ -109,10 +109,14 @@ corrupts what the app is told, never the yardstick.
   with unplaced ones ahead in add order as tier 2 §6 requires — the best any
   router can do.
 
+- **Placed pairs**: the counted pairs whose items were both placed (tier 3)
+  by the trips before; disorder and floor are also taken over these alone.
+
 **O18 holds for a router** when, pooled over scenarios, shops and seeds:
-mean disorder ≤ paper at every n; at n = 5, mean normalised disorder is
-within 0.05 of the floor's; and over the scenarios with a rearrangement,
-the same at its fifth trip (trip 14).
+mean disorder ≤ paper at every n, over all pairs; at n = 5, mean normalised
+disorder over placed pairs is within 0.05 of the floor's over the same
+pairs; and over the scenarios with a rearrangement, the same at its fifth
+trip (trip 14).
 
 ## 4. Fixtures
 
