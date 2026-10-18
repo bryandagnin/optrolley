@@ -59,26 +59,36 @@ class AppOraclesTest {
         compose.onNodeWithTag(Tags.entryMenu(item)).performClick()
     }
 
-    /** Ticks, unticks, edits and removes [item], wherever it is presented. */
-    private fun exercise(item: ItemKey) {
+    private fun tickAndUntick(item: ItemKey) {
         scrollTo(Tags.entry(item))
         compose.onNodeWithTag(Tags.tick(item)).performClick()
         compose.onNodeWithTag(Tags.tick(item)).assertIsOn()
         compose.onNodeWithTag(Tags.tick(item)).performClick()
         compose.onNodeWithTag(Tags.tick(item)).assertIsOff()
+    }
 
-        openMenu(item)
-        compose.onNodeWithTag(Tags.actionEdit(item)).performClick()
-        compose.onNodeWithTag(Tags.EDIT_QUANTITY).performTextReplacement("7 of them")
-        compose.onNodeWithTag(Tags.EDIT_SAVE).performClick()
-        compose.waitForIdle()
-        scrollTo(Tags.entry(item))
-        compose.onNodeWithTag(Tags.entry(item)).assertTextContains("7 of them", substring = true)
-
-        openMenu(item)
-        compose.onNodeWithTag(Tags.actionRemove(item)).performClick()
-        compose.waitForIdle()
-        compose.onNodeWithTag(Tags.entry(item)).assertDoesNotExist()
+    /**
+     * Ticks, unticks and edits each of [items], wherever it is presented,
+     * then removes each. Removal comes last because its undo snackbar covers
+     * the foot of the list for a while.
+     */
+    private fun exercise(items: List<ItemKey>) {
+        for (item in items) {
+            tickAndUntick(item)
+            openMenu(item)
+            compose.onNodeWithTag(Tags.actionEdit(item)).performClick()
+            compose.onNodeWithTag(Tags.EDIT_QUANTITY).performTextReplacement("7 of them")
+            compose.onNodeWithTag(Tags.EDIT_SAVE).performClick()
+            compose.waitForIdle()
+            scrollTo(Tags.entry(item))
+            compose.onNodeWithTag(Tags.entry(item)).assertTextContains("7 of them", substring = true)
+        }
+        for (item in items) {
+            openMenu(item)
+            compose.onNodeWithTag(Tags.actionRemove(item)).performClick()
+            compose.waitForIdle()
+            compose.onNodeWithTag(Tags.entry(item)).assertDoesNotExist()
+        }
     }
 
     // --- O3: reachability ---
@@ -90,21 +100,27 @@ class AppOraclesTest {
             scrollTo(Tags.section(kind))
         }
         // One entry per section: eggs unplaced, milk and bread in the run, saffron elsewhere.
-        for (item in listOf(EGGS, MILK, SAFFRON, BREAD)) exercise(item)
+        exercise(listOf(EGGS, MILK, SAFFRON, BREAD))
+    }
+
+    @Test
+    fun `O3 an entry elsewhere can be ticked`() {
+        AppFixture.launch(compose, tmp.root)
+        tickAndUntick(SAFFRON)
     }
 
     @Test
     fun `O3 every entry can be ticked, edited and removed with no store selected`() {
         AppFixture.launch(compose, tmp.root)
         selectStore(Tags.STORE_OPTION_NONE)
-        for (item in ALL) exercise(item)
+        exercise(ALL)
     }
 
     @Test
     fun `O3 every entry can be ticked, edited and removed at a store that has learned nothing`() {
         AppFixture.launch(compose, tmp.root)
         selectStore(Tags.storeOption(CORNER))
-        for (item in ALL) exercise(item)
+        exercise(ALL)
     }
 
     @Test
@@ -168,6 +184,7 @@ class AppOraclesTest {
     fun `O10 the store stays selected through a trip, an idle end and a resume`() {
         val clock = AppFixture.Clock()
         val vm = AppFixture.launch(compose, tmp.root, clock = clock)
+        scrollTo(Tags.entry(MILK))
         compose.onNodeWithTag(Tags.tick(MILK)).performClick()
         compose.onNodeWithTag(Tags.FINISH_TRIP).assertIsDisplayed()
         compose.onNodeWithTag(Tags.STORE_PICKER).assertTextContains("Tesco Extra", substring = true)
@@ -178,6 +195,7 @@ class AppOraclesTest {
         compose.onNodeWithTag(Tags.FINISH_TRIP).assertDoesNotExist()
         compose.onNodeWithTag(Tags.STORE_PICKER).assertTextContains("Tesco Extra", substring = true)
 
+        scrollTo(Tags.entry(BREAD))
         compose.onNodeWithTag(Tags.tick(BREAD)).performClick()
         compose.onNodeWithTag(Tags.FINISH_TRIP).performClick()
         compose.waitForIdle()
