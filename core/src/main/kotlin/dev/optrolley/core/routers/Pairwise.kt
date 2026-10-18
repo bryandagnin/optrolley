@@ -4,6 +4,7 @@ import dev.optrolley.core.ItemKey
 import dev.optrolley.core.Router
 import dev.optrolley.core.TripOrder
 import java.util.PriorityQueue
+import kotlin.math.abs
 import kotlin.math.ln
 import kotlin.math.roundToLong
 
@@ -186,29 +187,39 @@ object Pairwise : Router {
      * guide to where an item went. Then by index, for determinism.
      */
     private fun lock(n: Int, ahead: DoubleArray, near: DoubleArray): List<IntArray> {
-        val from = ArrayList<Int>()
-        val to = ArrayList<Int>()
-        val margin = ArrayList<Double>()
+        var count = 0
+        for (a in 0 until n) for (b in a + 1 until n) if (ahead[a * n + b] != ahead[b * n + a]) count++
+        val from = IntArray(count)
+        val to = IntArray(count)
+        val margin = DoubleArray(count)
+        val closeness = DoubleArray(count)
+        var e = 0
         for (a in 0 until n) for (b in a + 1 until n) {
             val m = ahead[a * n + b] - ahead[b * n + a]
-            if (m > 0) {
-                from += a; to += b; margin += m
-            } else if (m < 0) {
-                from += b; to += a; margin += -m
+            if (m == 0.0) continue
+            from[e] = if (m > 0) a else b
+            to[e] = if (m > 0) b else a
+            margin[e] = abs(m)
+            closeness[e] = near[a * n + b]
+            e++
+        }
+        val byMargin = Array(count) { it }
+        byMargin.sortWith { x, y ->
+            when {
+                margin[x] != margin[y] -> margin[y].compareTo(margin[x])
+                closeness[x] != closeness[y] -> closeness[y].compareTo(closeness[x])
+                from[x] != from[y] -> from[x] - from[y]
+                else -> to[x] - to[y]
             }
         }
-        val byMargin = margin.indices.sortedWith(
-            compareByDescending<Int> { margin[it] }.thenByDescending { near[from[it] * n + to[it]] }
-                .thenBy { from[it] }.thenBy { to[it] },
-        )
         val words = (n + 63) ushr 6
         // reach[x * words ..]: the items x is locked ahead of, transitively.
         val reach = LongArray(n * words)
         fun reaches(x: Int, y: Int) = reach[x * words + (y ushr 6)] and (1L shl (y and 63)) != 0L
         val next = Array(n) { ArrayList<Int>() }
-        for (e in byMargin) {
-            val u = from[e]
-            val v = to[e]
+        for (k in byMargin) {
+            val u = from[k]
+            val v = to[k]
             if (reaches(v, u) || reaches(u, v)) continue // closes a cycle, or already implied
             next[u] += v
             for (x in 0 until n) {
