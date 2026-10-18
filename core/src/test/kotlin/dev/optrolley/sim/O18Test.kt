@@ -46,14 +46,14 @@ class SuiteTest {
 
     @Test
     fun `paper itself is no better than paper, and fails the margin`() {
-        val failures = O18.check(baselines.map { it.copy(presented = it.paper) })
+        val failures = O18.check(baselines.map { it.copy(presented = it.paper, presentedPlaced = it.paperPlaced) })
         assertEquals(2, failures.size, failures.toString())
         assertTrue(failures[0].startsWith("trip 5:") && failures[1].startsWith("trip 5 after"))
     }
 
     @Test
     fun `the report is deterministic`() {
-        val paper = Result.success(baselines.map { it.copy(presented = it.paper) })
+        val paper = Result.success(baselines.map { it.copy(presented = it.paper, presentedPlaced = it.paperPlaced) })
         val error = Result.failure<List<WalkScore>>(NotImplementedError("x"))
         val results = mapOf("paper" to paper, "broken" to error)
         val report = SimReport.render(results)

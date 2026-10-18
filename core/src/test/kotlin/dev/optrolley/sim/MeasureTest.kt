@@ -84,21 +84,32 @@ class MeasureTest {
     }
 
     @Test
-    fun `O18 check flags paper beaten, and the margin at trip 5 and after a rearrangement`() {
-        fun w(n: Int, since: Int?, shown: Double, paper: Double, floor: Double) =
-            WalkScore("s", "x", 1, n, since, 100, shown, paper, floor, floor)
-        val good = (1..6).map { w(it, null, if (it == 1) 50.0 else 10.0, 50.0, 6.0) }
+    fun `placed pairs are the counted pairs between placed items`() {
+        // Walk a | b c | d; shown d a c b; c unplaced. Counted: ab ad bd. Wrong: ad bd.
+        val walk = listOf(setOf(a), setOf(b, c), setOf(d))
+        assertEquals(Tally(3, 2.0), Measure.presented(Measure.among(walk, setOf(a, b, d)), listOf(d, a, c, b)))
+        assertEquals(Tally(0, 0.0), Measure.presented(Measure.among(walk, setOf(b, c)), listOf(d, a, c, b)))
+    }
+
+    @Test
+    fun `O18 check flags paper beaten, and the placed-pair margin at trip 5 and after a rearrangement`() {
+        // All-pairs figures far from the floor, which the margin must ignore; 50 placed pairs per walk.
+        fun w(n: Int, since: Int?, shown: Double, placedShown: Double, placedFloor: Double) =
+            WalkScore("s", "x", 1, n, since, 100, shown, 50.0, 0.0, 0.0, 50, placedShown, 25.0, placedFloor)
+        val good = (1..6).map { w(it, null, if (it == 1) 50.0 else 40.0, 5.0, 3.0) }
         assertEquals(emptyList(), O18.check(good))
-        // 10 against a floor of 5 is exactly the margin.
-        assertEquals(emptyList(), O18.check(good.map { if (it.n == 5) it.copy(floor = 5.0) else it }))
-        val tooFar = O18.check(good.map { if (it.n == 5) it.copy(floor = 4.9) else it })
+        // 5 against a floor of 2.5, of 50 pairs, is exactly the margin.
+        assertEquals(emptyList(), O18.check(good.map { if (it.n == 5) it.copy(floorPlaced = 2.5) else it }))
+        val tooFar = O18.check(good.map { if (it.n == 5) it.copy(floorPlaced = 2.4) else it })
         assertEquals(1, tooFar.size)
         assertTrue(tooFar.single().startsWith("trip 5:"))
         val worseThanPaper = O18.check(good.map { if (it.n == 3) it.copy(presented = 50.5) else it })
         assertEquals(1, worseThanPaper.size)
         assertTrue(worseThanPaper.single().startsWith("trip 3:"))
+        val nothingPlaced = O18.check(good.map { if (it.n == 5) it.copy(placedPairs = 0) else it })
+        assertEquals(listOf("trip 5: no placed pairs to measure"), nothingPlaced)
 
-        val rearranged = (1..12).map { n -> w(n, (n - 6).takeIf { it >= 1 }, if (n == 11) 20.0 else 10.0, 50.0, 6.0) }
+        val rearranged = (1..12).map { n -> w(n, (n - 6).takeIf { it >= 1 }, 40.0, if (n == 11) 10.0 else 5.0, 3.0) }
         val failures = O18.check(rearranged)
         assertEquals(1, failures.size)
         assertTrue(failures.single().startsWith("trip 5 after the rearrangement"))
