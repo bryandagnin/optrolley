@@ -13,8 +13,9 @@ particular shops or chains.
 
 "Optrolley" is **opt**imal trolley.
 
-**Nothing is built yet.** This is a spec skeleton. There is no code, no build,
-and no Android toolchain on the machine.
+**The first build exists** and is awaiting its field trial (tier 4 §9,
+step 9). It ships every router candidate side by side (D12) so real trips
+choose between them.
 
 ## Tiered spec-driven workflow
 
@@ -24,20 +25,26 @@ turns out to be wrong, say so explicitly and get agreement before changing it.
 
 | Tier | File | State |
 |------|------|-------|
-| 1. Rationale, tenets, steering | `spec/01-rationale.md` | **draft — awaiting the owner's confirmation** |
-| 2. Functional spec | `spec/02-functional.md` | draft |
-| 3. Predicates & oracles | `spec/03-oracles.md` | draft — **not frozen** |
-| 4. Low-level design / plan | `spec/04-design.md` | outline only |
-| 5. Test plan | `spec/05-tests.md` | outline only |
-| 6. Implementation | `core/`, `app/` | not started — no toolchain |
+| 1. Rationale, tenets, steering | `spec/01-rationale.md` | accepted for the first build |
+| 2. Functional spec | `spec/02-functional.md` | accepted for the first build |
+| 3. Predicates & oracles | `spec/03-oracles.md` | **frozen** |
+| 4. Low-level design / plan | `spec/04-design.md` | design — first build |
+| 5. Test plan | `spec/05-tests.md` | in force |
+| 6. Implementation | `core/`, `app/` | first build |
 
 Open and deferred questions sit outside the tiers in
 [`spec/open-questions.md`](./spec/open-questions.md). Answered ones graduate
 into the tier 1 decisions table.
 
-**The next step is not code.** It is confirming tiers 1–2 and freezing tier 3
-(tier 4 §9, step 0). Tier 1 was drafted from a one-line brief; treat it as a
-proposal until the owner has corrected it.
+**The next step is the field trial**, not more code. Its findings may send
+changes back up the tiers; tier 1 was drafted from a one-line brief and
+accepted as drafted, so expect it to be corrected by real use.
+
+**Frozen means frozen.** The oracle tests (`core/src/test/.../oracles/`) and
+the simulator (`.../sim/`) were written blind and judge the implementation
+and the routers. Do not edit them to make code pass; an oracle that cannot be
+met is raised with the owner (O18 was amended that way, with the reason
+recorded in tier 3).
 
 **Why 3 precedes 4.** Oracles must be design-independent: they state what is
 observably true of the list as presented, the observation history and the

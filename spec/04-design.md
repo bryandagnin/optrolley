@@ -182,6 +182,22 @@ trip, asks each router what it would have presented from the trips before —
 the lab view, and the way real data chooses the winner. A trivial baseline,
 `FirstSeen`, stays in the list as the bar to clear.
 
+**How they fared** against the oracle tests and the reference suite, placed
+pairs at trip 5 (floor 13.6%; 13.5% from a rearrangement; margin 5 points):
+
+| Router | Trip 5 | From rearrangement | Oracles |
+|--------|--------|--------------------|---------|
+| Positional — **default** | 14.0% | 18.1% | all pass |
+| Pairwise | 13.8% | 18.0% | all pass |
+| Precedence | 14.1% | 20.6% | fails O18 after a rearrangement |
+| First seen (baseline) | 33.1% | 47.5% | fails O14, O17, O18 |
+
+Positional is the default as the simplest that passes: a mean relative
+position, constrained so directly observed and recently repeated pairs hold
+(O14, O17), with no tuned constant beyond K. All three candidates read a trip
+that runs against what was learned as walked from the other door, and learn
+from its mirror — H6's proposed answer, which the field trial must confirm.
+
 ## 6. The simulator — the oracle for O18
 
 A synthetic shop and a synthetic shopper, so that "it gets better" is a

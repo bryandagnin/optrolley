@@ -67,6 +67,9 @@ on its own.
 
 ### H6. Walking the shop backwards
 
+**Status:** built into every router candidate — a trip that runs against what
+was learned is read as its mirror (tier 4 §5) — but unconfirmed in the field.
+
 Entering by another door reverses the route. One reversed trip would read as
 a rearrangement and unlearn a good order. Possible answers: recognise a trip
 that runs against the model and learn from its mirror; or offer to flip the

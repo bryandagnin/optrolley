@@ -1,14 +1,16 @@
 # Tier 5 — Test Plan
 
 **Date:** 2026-10-09
+**Last updated:** 2026-10-18
 
 ---
 
-## Status: OUTLINE
+## Status: IN FORCE
 
-No tests exist; no toolchain exists to run them. This fixes the kinds of
-check and which oracle each one answers for. Cases are written at each build
-step, failing first, before the code that satisfies them.
+The kinds of check and which oracle each answers for. Oracle tests live in
+`core/src/test/kotlin/dev/optrolley/oracles/`, the simulator in `…/sim/`,
+app oracles in `app/src/test/`. Run them all with
+`docker compose run --rm build ./gradlew :core:test :app:testDebugUnitTest`.
 
 ---
 
