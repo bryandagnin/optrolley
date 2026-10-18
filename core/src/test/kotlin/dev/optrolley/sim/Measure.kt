@@ -25,6 +25,11 @@ data class WalkScore(
     val paper: Double,
     val floor: Double,
     val bound: Double,
+    /** The counted pairs whose items were both placed before the trip: what a router controls (O18). */
+    val placedPairs: Int = 0,
+    val presentedPlaced: Double = Double.NaN,
+    val paperPlaced: Double = 0.0,
+    val floorPlaced: Double = 0.0,
 )
 
 object Measure {
@@ -47,6 +52,10 @@ object Measure {
         }
         return groups
     }
+
+    /** [walk] with only the items in [among]: pairs between them, nothing else. */
+    fun among(walk: List<Set<ItemKey>>, among: Set<ItemKey>): List<Set<ItemKey>> =
+        walk.map { g -> g.filter { it in among }.toSet() }
 
     /**
      * Pairs of [walk]'s items in different groups, and how many [rank] puts
@@ -101,6 +110,7 @@ object Measure {
             val walk = tieGroups(trip.walk)
             val placed = placed(run.trips.subList(0, trip.number - 1))
             val f = floor(walk, trip.layout)
+            val fp = floor(among(walk, placed), trip.layout)
             WalkScore(
                 scenario = scenario,
                 shop = run.shop.spec.name,
@@ -112,6 +122,9 @@ object Measure {
                 paper = paper(walk, trip.listed).disorder,
                 floor = f.disorder,
                 bound = bound(walk, trip.layout, trip.listed, placed).disorder,
+                placedPairs = fp.pairs,
+                paperPlaced = paper(among(walk, placed), trip.listed).disorder,
+                floorPlaced = fp.disorder,
             )
         }
 
@@ -123,7 +136,12 @@ object Measure {
         val history = listOf(Observation.RouterChosen(run.history.first().at, routerId)) + run.history
         return run.trips.zip(baselines) { trip, base ->
             val shown = flatten(present(history.subList(0, trip.presentAt + 1), routers))
-            base.copy(presented = presented(tieGroups(trip.walk), shown).disorder)
+            val walk = tieGroups(trip.walk)
+            val placed = placed(run.trips.subList(0, trip.number - 1))
+            base.copy(
+                presented = presented(walk, shown).disorder,
+                presentedPlaced = presented(among(walk, placed), shown).disorder,
+            )
         }
     }
 }

@@ -17,7 +17,9 @@ object SimReport {
         appendLine("Per trip number n, means over the walks pooled in the table. *router*, *paper*, *floor*: mean")
         appendLine("disorder in pairs. The % columns: mean share of the walk's counted pairs. *bound*: the true")
         appendLine("layout with tier 3's unplaced entries ahead in add order — the best any router could do.")
-        appendLine("O18 needs router ≤ paper at every n, and router % within ${pct(O18.MARGIN)} of floor % at n = ${O18.N}")
+        appendLine("*placed*: mean counted pairs of items both placed before the trip; *router p%*, *paper p%*, *floor p%*:")
+        appendLine("disorder as a share of those pairs.")
+        appendLine("O18 needs router ≤ paper at every n, and router p% within ${pct(O18.MARGIN)} of floor p% at n = ${O18.N}")
         appendLine("(and at n = ${O18.N} counted from the rearrangement).")
         appendLine()
         appendLine("## Baselines")
@@ -39,13 +41,20 @@ object SimReport {
                 appendLine("O18: **fails**")
                 failures.forEach { appendLine("- $it") }
             }
-            appendLine()
-            appendLine("Against the bound, not part of O18:")
-            for ((what, at) in listOf(
+            val points = listOf(
                 "n = ${O18.N}" to scores.filter { it.n == O18.N },
                 "n = ${O18.N} from the rearrangement" to scores.filter { it.sinceRearrangement == O18.N },
-            )) {
-                if (at.isEmpty()) continue
+            ).filter { it.second.isNotEmpty() }
+            appendLine()
+            appendLine("Over placed pairs, as O18 judges:")
+            for ((what, at) in points) {
+                val shown = O18.meanPlaced(at) { it.presentedPlaced }
+                val floor = O18.meanPlaced(at) { it.floorPlaced }
+                appendLine("- $what: router ${pct(shown)}, floor ${pct(floor)}, excess ${pct(shown - floor)}")
+            }
+            appendLine()
+            appendLine("Against the bound over all pairs, not part of O18:")
+            for ((what, at) in points) {
                 val shown = O18.meanNormalised(at) { it.presented }
                 val bound = O18.meanNormalised(at) { it.bound }
                 appendLine("- $what: router ${pct(shown)}, bound ${pct(bound)}, excess ${pct(shown - bound)}")
@@ -71,8 +80,8 @@ object SimReport {
         appendLine()
         appendLine("### $title")
         appendLine()
-        appendLine("| n | walks | pairs | router | paper | floor | router % | paper % | floor % | bound % |")
-        appendLine("|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|")
+        appendLine("| n | walks | pairs | router | paper | floor | router % | paper % | floor % | bound % | placed | router p% | paper p% | floor p% |")
+        appendLine("|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|")
         for ((k, at) in scores.groupBy(n).toSortedMap()) {
             val w = at.size.toDouble()
             appendLine(
@@ -81,6 +90,9 @@ object SimReport {
                     num(at.sumOf { it.presented } / w), num(at.sumOf { it.paper } / w), num(at.sumOf { it.floor } / w),
                     pct(O18.meanNormalised(at) { it.presented }), pct(O18.meanNormalised(at) { it.paper }),
                     pct(O18.meanNormalised(at) { it.floor }), pct(O18.meanNormalised(at) { it.bound }),
+                    num(at.sumOf { it.placedPairs } / w),
+                    pct(O18.meanPlaced(at) { it.presentedPlaced }), pct(O18.meanPlaced(at) { it.paperPlaced }),
+                    pct(O18.meanPlaced(at) { it.floorPlaced }),
                 ).joinToString(" | ", "| ", " |"),
             )
         }
