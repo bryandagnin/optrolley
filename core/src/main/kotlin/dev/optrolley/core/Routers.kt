@@ -1,5 +1,6 @@
 package dev.optrolley.core
 
+import dev.optrolley.core.routers.Positional
 import dev.optrolley.core.routers.Precedence
 
 /** The routing methods built in (F11), and which one a fresh install uses. */
@@ -12,7 +13,7 @@ class Routers(val list: List<Router>, val defaultId: String) {
 
     companion object {
         /** Filled as router candidates land; [FirstSeen] until then. */
-        val all = Routers(listOf(FirstSeen, Precedence), FirstSeen.id)
+        val all = Routers(listOf(FirstSeen, Precedence, Positional), FirstSeen.id)
     }
 }
 
