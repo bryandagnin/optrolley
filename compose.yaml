@@ -11,6 +11,9 @@ services:
       # The Gradle cache is most of the build's I/O; a bind mount of a
       # Windows drive is too slow to hold it.
       - gradle-cache:/root/.gradle
+      # The debug signing key lives here. Without a volume each run makes a
+      # new one, and the phone refuses every update as a different signer.
+      - android-home:/root/.android
     # Host-adb route: ADB_SERVER_SOCKET=tcp:host.docker.internal:5037. No
     # extra_hosts mapping: Rancher Desktop already resolves that name to the
     # Windows host, and host-gateway would point it at the VM's bridge instead.
@@ -31,5 +34,9 @@ services:
 volumes:
   gradle-cache:
     # Fixed name: compose would otherwise prefix the directory name, giving
-    # every worktree its own cold cache.
-    name: optrolley-gradle-cache
+    # every worktree its own cold cache. Agents building in parallel set
+    # GRADLE_CACHE_VOLUME to a name of their own: concurrent builds on one
+    # cache time out waiting for its journal lock.
+    name: ${GRADLE_CACHE_VOLUME:-optrolley-gradle-cache}
+  android-home:
+    name: optrolley-android-home

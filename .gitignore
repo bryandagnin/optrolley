@@ -50,3 +50,6 @@ Thumbs.db
 # --- Local tool-path overrides ---
 .tool-paths
 .aider*
+
+# --- Agent worktrees (Claude Code) ---
+.claude/worktrees/

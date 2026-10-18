@@ -112,6 +112,15 @@ committed in the meantime.
   they live in the image in `docker/`, run through `compose.yaml`
   (`spec/04-design.md` §2). The host has only Docker and `adb`. Record any
   host binary in `~/.tool-paths`.
+- **Building in parallel** (several agents or worktrees at once): give each
+  its own Gradle cache, `GRADLE_CACHE_VOLUME=optrolley-gradle-<name> docker
+  compose run --rm build …`, or take turns. One shared cache makes
+  concurrent builds fail with "Timeout waiting to lock journal cache".
+  Remove the extra volumes afterwards.
+- **The phone** is driven over the host's `adb` (path in `~/.tool-paths`).
+  Every interactive element has a Compose testTag exposed as a uiautomator
+  resource id (`app/…/ui/Tags.kt`). Test data left on the phone pollutes the
+  owner's real history: `adb shell pm clear dev.optrolley.autoroute` after.
 - **Proposed stack:** Kotlin; `core/` has no Android dependency. See
   `spec/04-design.md` §1 for the reasoning and the case against it.
 - Spec documents carry `**Date:** YYYY-MM-DD`; significant revisions add
