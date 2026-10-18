@@ -5,7 +5,7 @@ FROM eclipse-temurin:${JDK_VERSION}-jdk
 
 # Build number of the SDK command-line tools zip on developer.android.com.
 ARG CMDLINE_TOOLS_BUILD=15859902
-ARG ANDROID_PLATFORM=android-36
+ARG ANDROID_PLATFORM=android-37.0
 ARG BUILD_TOOLS=36.0.0
 
 ENV ANDROID_HOME=/opt/android-sdk

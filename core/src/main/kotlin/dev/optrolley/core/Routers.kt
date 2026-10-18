@@ -1,0 +1,21 @@
+package dev.optrolley.core
+
+/** The routing methods built in (F11), and which one a fresh install uses. */
+class Routers(val list: List<Router>, val defaultId: String) {
+    fun byId(id: String): Router = list.firstOrNull { it.id == id } ?: byId(defaultId)
+
+    companion object {
+        /** Filled as router candidates land; [FirstSeen] until then. */
+        val all = Routers(listOf(FirstSeen), FirstSeen.id)
+    }
+}
+
+/**
+ * A router that learns nothing useful: orders items by the first trip each
+ * was seen in, then by name. The baseline the candidates must beat.
+ */
+object FirstSeen : Router {
+    override val id = "first-seen"
+    override val label = "First seen"
+    override fun order(trips: List<TripOrder>, items: Set<ItemKey>): List<ItemKey> = TODO()
+}
