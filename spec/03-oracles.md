@@ -106,10 +106,17 @@ Derived from T4, T3 and F7–F8.
 - **O18 — It gets better.** Over the reference simulation suite (tier 5 §3),
   mean *disorder* — the number of entry pairs presented in the opposite order
   to that walked — is, for every trip number n ≥ 1, no greater than paper
-  order would give, and by trip **n = 5** is within **5% of all pairs** of
-  the suite's noise floor: the disorder of the shop's true layout order
-  against the same walks. A scenario with a rearrangement is measured again
-  from the rearrangement, with the same n and margin.
+  order would give; and by trip **n = 5**, over pairs of items both already
+  placed at the store, it is within **5% of those pairs** of the suite's
+  noise floor: the disorder of the shop's true layout order against the same
+  walks, over the same pairs. A scenario with a rearrangement is measured
+  again from the rearrangement, with the same n and margin.
+
+  *Amended 2026-10-18, with the owner's agreement.* As first frozen, the
+  margin counted all pairs, and the simulator showed no router could meet it:
+  items never bought at a store must be shown unplaced, ahead of the run
+  (T3, O27), so even the true layout sat about 24% of pairs above the floor
+  at n = 5. Counting only placed pairs judges what a router controls.
 - **O19 — Deterministic.** The presentation is a function of the list, the
   observation history and the selected store, and of nothing else. Not the
   clock, not chance. (The routing method in use is itself chosen by a

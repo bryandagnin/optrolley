@@ -57,13 +57,66 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 
 ## 3. The reference simulation suite
 
-To be specified at build step 4, before any router exists: the shops, the
-noise settings, the seeds, the number of trips. Fixed seeds, so that O18 is a
-repeatable measurement and not a matter of luck (and so that the suite itself
-satisfies O19).
+Specified before any router existed, by an agent that had seen none. Code in
+`core/src/test/kotlin/dev/optrolley/sim/`; the report of every router's
+curves is written to `core/build/sim-report.md`.
 
-At least one scenario per noise source in tier 4 §6, one with no noise at
-all, and one with everything on.
+**Shops.** Zones in walking order, items assigned to zones at random. The
+items are the shopper's repertoire there; names are drawn from a shuffled
+numbering, so no order of names says anything about the layout.
+
+| Shop | Zones | Items | Staples |
+|------|------:|------:|--------:|
+| corner | 6 | 36 | 10 |
+| supermarket | 12 | 96 | 18 |
+| superstore | 20 | 180 | 22 |
+
+**Shopper.** Each trip: a list drawn from the repertoire — each staple with
+probability 0.5–0.9, each other item 0.02–0.10, clamped to 8–30 entries —
+added in random order hours apart; the store selected; every zone walked in
+order, 15–60 s through each; items in a zone picked in random order, 2–12 s
+apart; each ticked 0.3–2.5 s after it is picked; the trip finished by the
+user. Ticked entries leave the list at the end, as tier 2 §5 says.
+
+**Noise**, each with its own random stream, so turning one on leaves every
+other draw unchanged:
+
+| Source | Setting in the suite |
+|--------|----------------------|
+| Batched | per pick, 0.1 chance that it and the next 1–4 are ticked together at a pause, 0.4–2 s apart |
+| Late | per pick, 0.1 chance it is ticked 1–10 s after the tick of the pick 1–4 later (at the till if none) |
+| Reversed | per trip, 0.25 chance the zones are walked backwards |
+| Rearranged | from trip 10: 30% of zones moved in the walk, 10% of items moved to another zone |
+| Absent | 3 wanted items not stocked; each on a list with 0.3 chance, said "not here" with 0.5, removed after the trip with 0.5 |
+
+**Scenarios:** clean, one per source, and everything — 7. Each × 3 shops ×
+seeds 1–8, 20 trips. A shop's seed is shared across scenarios, so they differ
+only by their noise.
+
+**Measure**, per trip n, for the presentation at the start of the trip (its
+list added, its store selected) against the trip's **walk** — the order the
+items were picked up, grouped by the tie window on pick times. Noise
+corrupts what the app is told, never the yardstick.
+
+- **Disorder**: counted pairs — both walked, in different tie groups — that
+  are presented the other way round. Normalised: as a share of the walk's
+  counted pairs, then averaged over walks.
+- **Paper**: the same for add order.
+- **Noise floor**: the same for the layout in force at that trip, zone
+  order. A pair within one zone counts ½: the walk picks within a zone in no
+  order, so any order fixed before the walk gets it wrong half the time.
+- **Bound** (diagnostic, not in O18): the true layout for placed items,
+  with unplaced ones ahead in add order as tier 2 §6 requires — the best any
+  router can do.
+
+- **Placed pairs**: the counted pairs whose items were both placed (tier 3)
+  by the trips before; disorder and floor are also taken over these alone.
+
+**O18 holds for a router** when, pooled over scenarios, shops and seeds:
+mean disorder ≤ paper at every n, over all pairs; at n = 5, mean normalised
+disorder over placed pairs is within 0.05 of the floor's over the same
+pairs; and over the scenarios with a rearrangement, the same at its fifth
+trip (trip 14).
 
 ## 4. Fixtures
 
