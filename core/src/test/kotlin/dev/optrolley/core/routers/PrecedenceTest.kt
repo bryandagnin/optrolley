@@ -140,11 +140,35 @@ class PrecedenceTest {
         assertTrue(before(out, key("a"), key("b")), "$out")
     }
 
+    // H6: a walk from the other door is read as its mirror, not as a rearrangement.
     @Test
-    fun oneOddTripIsOutvotedByHabit() {
+    fun aReversedWalkIsReadAsItsMirror() {
         val order = names(10)
         val trips = List(5) { walk(order) } + walk(order.reversed())
         assertEquals(order, Precedence.order(trips, order.toSet()))
+        val partial = walk(order.filterIndexed { i, _ -> i % 2 == 0 }.reversed())
+        assertEquals(order, Precedence.order(trips + partial, order.toSet()))
+    }
+
+    @Test
+    fun theOrientationShownIsTheOneMostTripsWereWalkedIn() {
+        val order = names(10)
+        val trips = listOf(walk(order.reversed()), walk(order), walk(order.drop(2)), walk(order.take(7)))
+        assertEquals(order, Precedence.order(trips, order.toSet()))
+    }
+
+    // O17 where the new order is the old one reversed, so each new trip also looks like a mirrored walk.
+    @Test
+    fun aReversalSeenThreeTimesIsAbsorbed() {
+        val random = Random(18)
+        repeat(100) {
+            val old = names(random.nextInt(2, 20)).shuffled(random)
+            val (b, a) = old.shuffled(random).take(2).let { (x, y) -> if (before(old, x, y)) x to y else y to x }
+            fun sub(order: List<ItemKey>) = walk(order.filter { it == a || it == b || random.nextDouble() < 0.5 })
+            val older = List(random.nextInt(0, 101)) { sub(old) }
+            val out = Precedence.order(older + List(3) { sub(old.reversed()) }, old.toSet())
+            assertTrue(before(out, a, b), "${a.value} before ${b.value} after ${older.size} older trips")
+        }
     }
 
     @Test
