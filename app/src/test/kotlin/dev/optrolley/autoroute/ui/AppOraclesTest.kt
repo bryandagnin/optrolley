@@ -44,6 +44,11 @@ class AppOraclesTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    private companion object {
+        /** Longer than SnackbarDuration.Long. */
+        const val UNDO_TIMEOUT_MS = 15_000L
+    }
+
     private fun scrollTo(tag: String) {
         compose.onNodeWithTag(Tags.LIST).performScrollToNode(hasTestTag(tag))
     }
@@ -70,7 +75,7 @@ class AppOraclesTest {
     /**
      * Ticks, unticks and edits each of [items], wherever it is presented,
      * then removes each. Removal comes last because its undo snackbar covers
-     * the foot of the list for a while.
+     * the foot of the list until it times out.
      */
     private fun exercise(items: List<ItemKey>) {
         for (item in items) {
@@ -88,6 +93,9 @@ class AppOraclesTest {
             compose.onNodeWithTag(Tags.actionRemove(item)).performClick()
             compose.waitForIdle()
             compose.onNodeWithTag(Tags.entry(item)).assertDoesNotExist()
+            // Let the undo snackbar time out rather than tap through it.
+            compose.mainClock.advanceTimeBy(UNDO_TIMEOUT_MS)
+            compose.waitForIdle()
         }
     }
 
@@ -136,6 +144,31 @@ class AppOraclesTest {
         openMenu(EGGS)
         compose.onNodeWithTag(Tags.actionNotHereStore(EGGS)).assertIsNotEnabled()
         compose.onNodeWithTag(Tags.actionNotHereChain(EGGS)).assertDoesNotExist()
+    }
+
+    // --- F1: adding, outside the oracles but on every trip ---
+
+    @Test
+    fun `an added name joins the list once, and items used before are suggested`() {
+        AppFixture.launch(compose, tmp.root)
+        compose.onNodeWithTag(Tags.ADD_FIELD).performTextInput("Tea")
+        compose.onNodeWithTag(Tags.ADD_BUTTON).performClick()
+        compose.waitForIdle()
+        scrollTo(Tags.entry(ItemKey("tea")))
+
+        compose.onNodeWithTag(Tags.ADD_FIELD).performTextInput(" TEA ")
+        compose.onNodeWithTag(Tags.ADD_BUTTON).performClick()
+        compose.waitForIdle()
+        compose.onAllNodes(hasTestTag(Tags.entry(ItemKey("tea")))).assertCountEquals(1)
+        compose.mainClock.advanceTimeBy(UNDO_TIMEOUT_MS)
+
+        openMenu(MILK)
+        compose.onNodeWithTag(Tags.actionRemove(MILK)).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag(Tags.ADD_FIELD).performTextInput("mi")
+        compose.onNodeWithTag(Tags.suggestion(MILK)).performClick()
+        compose.waitForIdle()
+        scrollTo(Tags.entry(MILK))
     }
 
     // --- O4: Elsewhere is announced ---
