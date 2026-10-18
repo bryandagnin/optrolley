@@ -54,7 +54,8 @@ data class UiMessage(val text: String, val undo: List<Observation>? = null, val 
 class AppViewModel(
     private val store: HistoryStore,
     private val clock: () -> Long = System::currentTimeMillis,
-    private val work: CoroutineDispatcher = Dispatchers.IO,
+    private val io: CoroutineDispatcher = Dispatchers.IO,
+    private val compute: CoroutineDispatcher = Dispatchers.Default,
     private val routers: Routers = Routers.all,
 ) : ViewModel() {
     private val _ui = MutableStateFlow(UiState())
@@ -181,7 +182,7 @@ class AppViewModel(
     }
 
     fun computeLab() = serially {
-        val scores = withContext(Dispatchers.Default) { score(history, routers) }
+        val scores = withContext(compute) { score(history, routers) }
         _ui.update { it.copy(lab = scores) }
     }
 
@@ -250,7 +251,7 @@ class AppViewModel(
 
     private suspend fun recompute() {
         val h = history
-        val (state, presentation) = withContext(Dispatchers.Default) { replay(h) to present(h, routers) }
+        val (state, presentation) = withContext(compute) { replay(h) to present(h, routers) }
         _ui.update { it.copy(history = h, state = state, presentation = presentation, lab = null) }
     }
 
@@ -258,7 +259,7 @@ class AppViewModel(
 
     private fun serially(block: suspend () -> Unit) {
         viewModelScope.launch {
-            lock.withLock { withContext(work) { block() } }
+            lock.withLock { withContext(io) { block() } }
         }
     }
 

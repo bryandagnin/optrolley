@@ -35,7 +35,7 @@ class AppViewModelTest {
     private fun start(history: List<Observation> = AppFixture.history): AppViewModel {
         val store = HistoryStore(file())
         store.append(history)
-        return AppViewModel(store, clock::read, Dispatchers.Unconfined).also { idle() }
+        return AppViewModel(store, clock::read, Dispatchers.Unconfined, Dispatchers.Unconfined).also { idle() }
     }
 
     private fun idle() = ShadowLooper.idleMainLooper()
@@ -118,7 +118,7 @@ class AppViewModelTest {
         idle()
 
         val empty = File(tmp.root, "fresh").apply { mkdirs() }
-        val fresh = AppViewModel(HistoryStore(File(empty, "history.jsonl")), clock::read, Dispatchers.Unconfined)
+        val fresh = AppViewModel(HistoryStore(File(empty, "history.jsonl")), clock::read, Dispatchers.Unconfined, Dispatchers.Unconfined)
         idle()
         fresh.importFrom { exported }
         idle()
@@ -129,7 +129,7 @@ class AppViewModelTest {
 
     @Test
     fun `a file that is not an export is refused without writing anything`() {
-        val vm = AppViewModel(HistoryStore(file()), clock::read, Dispatchers.Unconfined)
+        val vm = AppViewModel(HistoryStore(file()), clock::read, Dispatchers.Unconfined, Dispatchers.Unconfined)
         idle()
         vm.importFrom { "{\"hello\":1}" }
         idle()

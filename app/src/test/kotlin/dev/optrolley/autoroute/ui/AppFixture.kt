@@ -65,7 +65,7 @@ object AppFixture {
     ): AppViewModel {
         val store = HistoryStore(File(dir, "history.jsonl"))
         store.append(history)
-        val vm = AppViewModel(store, clock::read, Dispatchers.Unconfined)
+        val vm = AppViewModel(store, clock::read, Dispatchers.Unconfined, Dispatchers.Unconfined)
         rule.setContent { OptrolleyTheme(dark = false) { OptrolleyApp(vm) } }
         rule.waitForIdle()
         return vm

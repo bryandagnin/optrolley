@@ -66,6 +66,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -323,6 +325,7 @@ private fun SectionHeader(kind: SectionKind, count: Int, state: State) {
             .fillMaxWidth()
             .background(container)
             .padding(horizontal = 16.dp, vertical = 8.dp)
+            .semantics(mergeDescendants = true) { heading() }
             .testTag(Tags.section(kind)),
     ) {
         Text(title, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
