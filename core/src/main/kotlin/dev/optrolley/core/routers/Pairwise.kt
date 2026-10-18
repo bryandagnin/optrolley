@@ -19,6 +19,10 @@ import kotlin.math.roundToLong
  * first, skipping any pair that would close a cycle (Tideman's ranked pairs),
  * and the strengths only choose among orders that respect what was locked.
  * A consistent history has no cycles, so all of it is honoured.
+ *
+ * Every step is a function of the trips' tie groups as sets, indexed by name,
+ * so the order is deterministic and blind to the order ticks were made in
+ * within a group (O15, O19).
  */
 object Pairwise : Router {
     override val id = "pairwise"
@@ -30,19 +34,32 @@ object Pairwise : Router {
      * their margin on the flipped pair is at least (1 + r + r²) − r³/(1 − r),
      * and any locked path that could block it must cross some pair the new
      * order contradicts, whose margin is at most r³/(1 − r). The newer wins
-     * whenever r³ < 1/3, i.e. r < 0.693; this is the slowest decay that does.
+     * whenever r³ < 1/3, i.e. r < 0.693: the slowest decay that does, so
+     * noise is outvoted by as much history as O17 allows.
      */
     private const val DECAY = 0.69
+
+    /**
+     * The same, for the vote on which way the store is walked. The newest
+     * K = 3 trips, agreeing with each other, must outvote all older ones:
+     * 1 + v + v² > v³/(1 − v) whenever v³ < 1/2, i.e. v < 0.794. Slower than
+     * [DECAY], since one walk from the other door is no reason to turn round.
+     */
+    private const val VOTE_DECAY = 0.79
 
     /**
      * Pseudo-games each item plays against a fixed reference, as a share of
      * its own (decayed) games, half of them won. It only keeps strengths
      * finite when an item always came first or last; being relative, it does
      * not let decay make an old item look less certain than a recent one.
+     * The suite barely moves between 0.01 and 1.
      */
     private const val PRIOR = 0.1
 
-    /** Fixed, so the fit never depends on a convergence test's rounding. */
+    /**
+     * Fixed, so the fit never depends on a convergence test's rounding. The
+     * strengths only break ties the locked pairs leave; 30 does as well.
+     */
     private const val ITERATIONS = 100
 
     override fun order(trips: List<TripOrder>, items: Set<ItemKey>): List<ItemKey> {
@@ -57,21 +74,54 @@ object Pairwise : Router {
 
         // ahead[a * n + b]: decayed weight of trips with a ticked before b.
         val ahead = DoubleArray(n * n)
+        // near[a * n + b]: the same weights over how many tie groups apart they were.
+        val near = DoubleArray(n * n)
+        // Trips walked from the other door (H6) are learnt from their mirror:
+        // each trip, newest first, is turned to agree with the newer ones, and
+        // the whole frame then faces the way most of the weight walked. A
+        // trip is turned only if it disputes more than it confirms, so a
+        // consistent history is never touched (O14); and the newest K trips of
+        // O17 agree with each other and outweigh all older ones, so they set
+        // the frame (see [VOTE_DECAY]).
+        var turned = 0.0
+        var kept = 0.0
         var w = 1.0
+        var v = 1.0
         for (t in trips.indices.reversed()) {
             val groups = trips[t].groups
             if (groups.size > 1) {
-                val gs = groups.map { g -> IntArray(g.size).also { a -> g.forEachIndexed { i, k -> a[i] = index.getValue(k) } } }
+                // Sorted, so sums run in an order the tick order cannot change (O15).
+                val gs = groups.map { g -> g.map { index.getValue(it) }.toIntArray().apply { sort() } }
+                var agree = 0.0
                 for (i in gs.indices) for (j in i + 1 until gs.size) {
-                    for (a in gs[i]) for (b in gs[j]) if (a != b) ahead[a * n + b] += w
+                    for (a in gs[i]) for (b in gs[j]) agree += ahead[a * n + b] - ahead[b * n + a]
+                }
+                val mirror = agree < 0
+                if (mirror) turned += v else kept += v
+                for (i in gs.indices) for (j in i + 1 until gs.size) {
+                    val c = w / (j - i)
+                    for (a in gs[i]) for (b in gs[j]) {
+                        if (a == b) continue
+                        if (mirror) ahead[b * n + a] += w else ahead[a * n + b] += w
+                        near[a * n + b] += c
+                        near[b * n + a] += c
+                    }
                 }
             }
             // Never zero, so an undisputed pair however old still counts (O14).
             w = maxOf(w * DECAY, Double.MIN_VALUE)
+            v *= VOTE_DECAY
+        }
+        if (turned > kept) {
+            for (a in 0 until n) for (b in a + 1 until n) {
+                val x = ahead[a * n + b]
+                ahead[a * n + b] = ahead[b * n + a]
+                ahead[b * n + a] = x
+            }
         }
 
         val strength = fit(n, ahead)
-        val locked = lock(n, ahead)
+        val locked = lock(n, ahead, near)
         val ranked = linearise(n, locked, strength)
 
         val out = ArrayList<ItemKey>(items.size)
@@ -130,10 +180,12 @@ object Pairwise : Router {
 
     /**
      * Ranked pairs: each pair's net margin, largest first, locked unless it
-     * would close a cycle with those already locked. Equal margins go by
-     * index, which only matters between pairs that conflict.
+     * would close a cycle with those already locked. Equal margins — the
+     * same trips said both — go first to the pair ticked closer together:
+     * layouts change in pieces (tier 1 §5), so a near neighbour is the better
+     * guide to where an item went. Then by index, for determinism.
      */
-    private fun lock(n: Int, ahead: DoubleArray): List<IntArray> {
+    private fun lock(n: Int, ahead: DoubleArray, near: DoubleArray): List<IntArray> {
         val from = ArrayList<Int>()
         val to = ArrayList<Int>()
         val margin = ArrayList<Double>()
@@ -146,7 +198,8 @@ object Pairwise : Router {
             }
         }
         val byMargin = margin.indices.sortedWith(
-            compareByDescending<Int> { margin[it] }.thenBy { from[it] }.thenBy { to[it] },
+            compareByDescending<Int> { margin[it] }.thenByDescending { near[from[it] * n + to[it]] }
+                .thenBy { from[it] }.thenBy { to[it] },
         )
         val words = (n + 63) ushr 6
         // reach[x * words ..]: the items x is locked ahead of, transitively.
