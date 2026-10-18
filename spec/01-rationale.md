@@ -1,15 +1,17 @@
 # Tier 1 — Rationale, Core Tenets, Steering
 
 **Date:** 2026-10-09
+**Last updated:** 2026-10-18
 
 ---
 
-## Status: DRAFT
+## Status: ACCEPTED FOR THE FIRST BUILD
 
 Written while scaffolding, from a one-line brief ("android shopping list app
-with self-optimising auto-routing") and two answers about scope. This tier is
-the owner's steering, so read it as a proposal to correct, not as settled.
-§4 marks which decisions were stated and which were inferred.
+with self-optimising auto-routing") and two answers about scope. The owner
+accepted it as drafted by going ahead with the build (2026-10-18); the field
+trial is where it gets tested. §4 marks which decisions were stated, which
+were inferred, and which were accepted that way.
 
 ---
 
@@ -126,12 +128,18 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
 | # | Decision | Source |
 |---|----------|--------|
 | D1 | The project is called `optrolley-autoroute` (**opt**imal trolley). | stated |
-| D2 | "Auto-routing" is the in-shop order of the list, learned from tick-off order. | inferred from the brief — **confirm** |
+| D2 | "Auto-routing" is the in-shop order of the list, learned from tick-off order. | inferred; accepted |
 | D3 | The app is store-aware: routes are per shop, and availability is per shop or chain. | stated |
 | D4 | The current shop is chosen by hand first. Automatic detection (e.g. geofence) is a later convenience and may only ever *supply* that same choice. | stated |
-| D5 | Single user, single device, no server. | proposed |
-| D6 | Native Android in Kotlin; routing logic in a module with no Android dependency. Reasoning and counter-case in tier 4 §1. | proposed |
-| D7 | Planning a trip across several shops is out of scope for now. | proposed |
+| D5 | Single user, single device, no server. | accepted |
+| D6 | Native Android in Kotlin; routing logic in a module with no Android dependency. Reasoning and counter-case in tier 4 §1. | accepted |
+| D7 | Planning a trip across several shops is out of scope for now. | accepted |
+| D8 | Unplaced entries are shown ahead of the run (was Q2). | accepted |
+| D9 | One list (was Q4). | accepted |
+| D10 | Names match ignoring case and surrounding whitespace, nothing cleverer; "trim milk" is not "milk" (was Q5). | accepted |
+| D11 | A rearrangement is absorbed within 3 trips (was Q3; values in tier 3). | accepted |
+| D12 | The first build ships every candidate routing method, selectable, and scores each against real trips. Choosing one waits for real data. | stated |
+| D13 | Application id `dev.optrolley.autoroute`, display name "Optrolley", minimum Android 10 (API 29) (was Q6). | accepted |
 
 ## 5. Assumptions not yet tested
 

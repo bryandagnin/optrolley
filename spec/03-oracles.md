@@ -1,30 +1,24 @@
 # Tier 3 — Predicates and Oracles
 
 **Date:** 2026-10-09
+**Last updated:** 2026-10-18
 
 ---
 
-## Status: DRAFT — not frozen
+## Status: FROZEN — 2026-10-18
 
-These are meant to become frozen oracles: stated over what a user can observe
-— the list as presented, the observation history, an export file — and
-checkable by someone who knows nothing about how the app is built.
+Frozen at the owner's go-ahead to build, with tiers 1–2 accepted as drafted.
+Before freezing, the set was re-derived from tiers 1–2 alone by an agent that
+had not read tier 4, and the two sets reconciled: O25–O40 come from that
+re-derivation, as do the values below.
 
-**They are not frozen yet, for two reasons.**
+They may not be weakened to accommodate a design. An oracle that cannot be
+satisfied is a finding about tier 1 or 2 and is raised as one. Adding oracles
+is fine. Loosening one needs explicit agreement and a recorded reason.
 
-1. Tiers 1 and 2 are unconfirmed drafts. Freezing predicates derived from an
-   unconfirmed scope would freeze the guess.
-2. They were written by the same agent that outlined tier 4. Independence
-   should be structural: before freezing, have them re-derived from tiers 1–2
-   by an agent that has not read tier 4, and reconcile the two sets.
-
-Once frozen: they may not be weakened to accommodate a design. An oracle that
-cannot be satisfied is a finding about tier 1 or 2 and is raised as one.
-Adding oracles is fine. Loosening one needs explicit agreement and a recorded
-reason.
-
-Values marked **[set at freeze]** must be fixed before any router exists, so
-that the threshold cannot be chosen to fit the result.
+**Hard and soft.** Every oracle except O13–O18 is hard: every build satisfies
+it. O13–O18 judge a routing method; the first build ships several methods side
+by side (F11) and reports how each fares on them.
 
 ---
 
@@ -32,12 +26,20 @@ that the threshold cannot be chosen to fit the result.
 
 - **Presentation**: the sections and the order of entries shown for a given
   list, observation history and store selection.
-- **Tie window**: the interval within which two ticks are treated as
-  simultaneous. **[set at freeze]**
-- **Trip order**: the order of a trip's final ticks, with ticks inside one tie
-  window unordered relative to each other.
+- **Tie window**: **5 seconds**, chained — a *tie group* is a maximal run of
+  ticks in which each follows the previous by less than 5 s. Ticks in one
+  group are unordered relative to each other.
+- **Idle timeout**: **2 hours** from the trip's last observation. The app
+  records the end when it notices, so the end is part of the history.
+- **Trip order**: the order of a trip's final ticks, as a sequence of tie
+  groups.
 - **Consistent history**: the trips at a store are consistent if some single
   total order of items agrees with every trip's order.
+- **Placed**: an item is placed at a store once some ended trip there ticked
+  it in a different tie group from at least one other item. Placement is
+  never lost.
+- **Item match**: two typed names are the same item if they are equal after
+  trimming surrounding whitespace and ignoring case.
 
 ## A. List integrity
 
@@ -99,15 +101,19 @@ Derived from T4, T3 and F7–F8.
 - **O17 — A rearrangement is absorbed.** If a store's history agrees with one
   order and is followed by K successive trips agreeing with a different order,
   each containing both *a* and *b*, then *a* and *b* are presented in the new
-  order. **K [set at freeze]; proposed ≤ 3.**
+  order. **K = 3**, whatever the length of the older history (up to 100
+  trips).
 - **O18 — It gets better.** Over the reference simulation suite (tier 5 §3),
   mean *disorder* — the number of entry pairs presented in the opposite order
   to that walked — is, for every trip number n ≥ 1, no greater than paper
-  order would give, and falls to within a stated margin of the suite's noise
-  floor by a stated n. **Margin and n [set at freeze].**
+  order would give, and by trip **n = 5** is within **5% of all pairs** of
+  the suite's noise floor: the disorder of the shop's true layout order
+  against the same walks. A scenario with a rearrangement is measured again
+  from the rearrangement, with the same n and margin.
 - **O19 — Deterministic.** The presentation is a function of the list, the
   observation history and the selected store, and of nothing else. Not the
-  clock, not chance.
+  clock, not chance. (The routing method in use is itself chosen by a
+  recorded observation, F11.)
 
 ## E. The record
 
@@ -128,6 +134,55 @@ Derived from T6.
   checkable from the package alone, and makes "location never leaves the
   phone" true by construction.
 - **O24 — Fully offline.** Every function in tier 2 works with all radios off.
+
+## G. From the independent re-derivation
+
+- **O25 — Unknown is not unavailable.** An item never ticked at a store, with
+  no standing "not here" for that store or its chain, is never in Elsewhere
+  there.
+- **O26 — Section order.** With a store selected, the non-empty sections are
+  presented in the order Unplaced, Run, Elsewhere, and every entry is in
+  exactly one. With none selected there is one section.
+- **O27 — Placed means Run.** At a store, an entry not in Elsewhere is in the
+  Run if its item is placed there, and in Unplaced otherwise.
+- **O28 — A tick stays put.** Ticking or unticking changes only that entry's
+  ticked mark, not its position or section, until the trip ends. Ticked
+  entries remain visible until then.
+- **O29 — Learning waits for the next trip.** Two histories that differ only
+  inside the trip in progress give the same sections and order (ticked marks
+  aside).
+- **O30 — A mid-trip addition lands where it belongs.** An entry added during
+  a trip is presented where it would be had it been on the list when the
+  trip began.
+- **O31 — Undo and redo count once.** A tick, untick and re-tick within a
+  trip teaches the same as the final tick alone. A tick undone and not redone
+  teaches nothing.
+- **O32 — No store, no learning.** Ticks made with no store selected change
+  no store's presentation.
+- **O33 — Trip end.** A trip ends when the user finishes it, selects another
+  store or none, or the idle timeout passes. Then its ticked entries leave
+  the list, and unticked entries stay with quantity and note intact. A
+  session with no store selected ends the same way.
+- **O34 — Chain scope.** "Not here" said of a chain puts the entry in
+  Elsewhere at every store of that chain and at no other.
+- **O35 — "Not here" is reversible.** Undoing it gives the presentation the
+  history would give had it never been said. The history keeps both.
+- **O36 — Items carry over.** Removing an entry and adding a matching name
+  again gives the new entry the old item's placement.
+- **O37 — Details move nothing.** Editing an entry's quantity or note changes
+  no section or order at any store.
+- **O38 — Renaming moves nothing.** Renaming a store or chain leaves its
+  presentation unchanged; a new store under the old name starts cold.
+- **O39 — Nothing is demanded.** Creating a store asks for a name and,
+  optionally, a chain — nothing else. No action is ever refused for want of
+  an aisle, category or position.
+- **O40 — The store is always shown.** Wherever the list is shown, the
+  selected store (or none) is shown with it.
+
+Elsewhere follows the most recent explicit statement (O5), whatever its
+scope; a purchase at a store is such a statement for that store (O6). It
+takes effect from the next trip, since O28 holds the entry in place; a
+"not here" said mid-trip moves the entry at once, being the user's own act.
 
 ---
 

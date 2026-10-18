@@ -5,11 +5,10 @@
 
 ---
 
-## Status: OUTLINE
+## Status: DESIGN — first build
 
-Not a design yet. It fixes just enough shape to choose a toolchain and write
-the first tests. Each section is to be filled in after tier 3 is frozen, and
-not before — detail written now would leak into the oracles.
+Tier 3 is frozen, so the design can be filled in. Sections 4–7 describe the
+first build; the router is still chosen by data (§5), not here.
 
 ---
 
@@ -126,15 +125,34 @@ docker/        the build image (§2)
 compose.yaml   build and emulator services (§2)
 ```
 
-## 4. Observations (to be designed)
+## 4. Observations and the presentation
 
-An append-only sequence of events: entry added / edited / removed, ticked,
-unticked, marked not-here (store or chain), store created, store selected,
-trip ended. Each carries a timestamp and enough identity to replay.
+**The record** is `List<Observation>` (`core/…/Observation.kt`): added,
+edited, removed, ticked, unticked, not-here and its undoing, store and chain
+creation and renaming, selection, trip ended, router chosen. Each carries
+wall-clock milliseconds, used only for tie groups and idleness; order is list
+position.
 
-Everything else — the list, the trips, what each store has learned — is a
-fold over that sequence (O20, O21). The export of F9 is that sequence,
-serialised (O22).
+**Everything else is a fold** (`replay`): the list, stores, chains, the trip
+in progress, each store's ended trips as tie-grouped `TripOrder`s, known
+names, and the router in force.
+
+**The clock never reaches the presentation.** Before recording an action,
+the app calls `settle(history, now)`, which appends a `TripEnded(IDLE)` if the
+trip has idled out. So whether a trip is in progress is itself in the
+history, and `present(history)` is a pure function (O19).
+
+**Why the list holds still (O7–O9, O28–O30) mostly by construction.** The run
+is computed from ended trips only, and a router orders *items*, not entries:
+the presentation filters the router's order to what is on the list. So within
+a trip nothing that feeds the order changes, an added entry drops into the
+place its item already has, and a tick changes only a mark. The exceptions
+are handled explicitly: a mid-trip "not here" moves its entry at once (the
+user's own act); a purchase that withdraws "not here" and a change of router
+both wait for the trip to end.
+
+**The export is the history** (`Export`), as JSON. Importing it is replaying
+it, so O22 is O21 by another route.
 
 ## 5. The router — chosen by oracle, not by argument
 
@@ -158,6 +176,12 @@ Candidates to try:
 
 Per O19, recency is counted in trips, never in wall-clock time.
 
+**All three ship in the first build (D12, F11).** `Routers` lists them; an
+observation chooses one. `score` replays the history and, for each ended
+trip, asks each router what it would have presented from the trips before —
+the lab view, and the way real data chooses the winner. A trivial baseline,
+`FirstSeen`, stays in the list as the bar to clear.
+
 ## 6. The simulator — the oracle for O18
 
 A synthetic shop and a synthetic shopper, so that "it gets better" is a
@@ -175,15 +199,25 @@ measurement.
 and frozen before the first router is written. A simulator written alongside
 the thing it judges will share its blind spots.
 
-## 7. To be designed
+## 7. The app
 
-- **Storage.** The event sequence in SQLite; derived state cached and always
-  rebuildable.
-- **UI.** One screen is the product: the list, the store selector, tick and
-  not-here within thumb reach. Everything else is secondary.
-- **Trip boundaries.** The idle timeout of F4, and what happens to a trip
-  interrupted by the app being killed.
-- **Store detection (F10).** Staged as in open questions H1.
+- **Storage.** The history as an append-only file of JSON lines in app
+  storage, flushed to disk before an action is shown as done. Not SQLite:
+  the record is a sequence that is only ever appended and replayed, and a
+  file is the simplest thing that does that; the derived state is rebuilt in
+  memory at start (a few thousand events replay in milliseconds).
+- **UI.** One screen is the product: the list in its sections, the store
+  selector always visible, tick and not-here within thumb reach, the
+  Elsewhere count announced. Secondary screens: stores and chains, the router
+  setting with its lab scores, export and import.
+- **Trip boundaries.** Idle ends are settled before each action and on
+  resume, so a trip interrupted by the app being killed ends when the user
+  next acts after the timeout.
+- **Export and import** through the system file picker, which needs no
+  storage permission. Import only into an empty history.
+- **No permissions at all** in the first build (O23).
+- **Store detection (F10).** Staged as in open questions H1; not in the first
+  build.
 
 ## 8. Internal predicates (tier 4 — NOT frozen)
 

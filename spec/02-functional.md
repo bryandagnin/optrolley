@@ -1,10 +1,11 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
+**Last updated:** 2026-10-18
 
 ---
 
-## Status: DRAFT
+## Status: ACCEPTED FOR THE FIRST BUILD
 
 Follows from tier 1 and inherits its uncertainty. Describes what the app does
 as the user sees it. How it does it belongs to tier 4.
@@ -32,7 +33,10 @@ as the user sees it. How it does it belongs to tier 4.
 - Typing suggests items used before.
 - An entry can be edited, removed, ticked and unticked.
 - Adding a name that matches an existing item reuses that item, so what was
-  learned about it carries over. What counts as a match is open (Q5).
+  learned about it carries over. Names match ignoring case and surrounding
+  whitespace (D10).
+- Adding a name already on the list does not add it twice; it shows the entry
+  that is there.
 
 ## 3. Stores and chains (F2)
 
@@ -50,19 +54,19 @@ as the user sees it. How it does it belongs to tier 4.
 ## 5. Trips (F4)
 
 - A trip starts without ceremony: at the first tick while a store is selected.
-- It ends when the user finishes it, selects a different store, or leaves it
-  idle long enough.
+- It ends when the user finishes it, selects a different store or none, or
+  leaves it idle long enough.
 - When a trip ends, ticked entries leave the list. Unticked entries stay, for
   the next trip or the next store.
-- With no store selected, ticking works and nothing is learned.
+- With no store selected, ticking works and nothing is learned. Ticked entries
+  leave the list by the same triggers.
 
 ## 6. Presentation (F5)
 
 For the selected store the list is shown in sections, in this order:
 
 1. **Unplaced** — in the order they were added. Shown first so they are seen
-   before setting off, since the app cannot say when they will be met.
-   (Placement is open, Q2.)
+   before setting off, since the app cannot say when they will be met (D8).
 2. **Run** — in learned walking order.
 3. **Elsewhere** — still visible, still tickable, clearly set apart.
 
@@ -83,7 +87,9 @@ normally.
 - **"Not here"** is an action on an entry, alongside tick. It moves the entry
   to Elsewhere for this store and leaves it on the list.
 - It can be said of the store or of its whole chain.
-- It is reversible, and ticking the item at that store reverses it.
+- It is reversible, and ticking the item at that store reverses it — from the
+  next trip, since a tick moves nothing during this one.
+- It needs a store selected; with none there is nowhere for it to apply.
 - Nothing is ever moved to Elsewhere by inference (T1). Finishing a trip with
   an entry unticked says nothing about availability.
 
@@ -109,7 +115,19 @@ from the user. Old evidence gives way to new.
   observation history — to a file, and import it on a fresh install.
 - This is the backup and the migration path. There is no other, by T6.
 
-## 11. Store detection (F10) — later
+## 11. Routing method (F11) — first build only
+
+- Every candidate routing method is built in, and a setting chooses which one
+  orders the run (D12). A change takes effect from the next trip.
+- A lab view scores every method against each trip already walked: how many
+  pairs it would have presented out of the walked order, using only the
+  trips before. This is how real data picks the method.
+- The choice is recorded like any other action, so the presentation stays a
+  function of the history.
+
+Once a method is chosen, the setting and the losing methods go.
+
+## 12. Store detection (F10) — later
 
 - With location permission, the app suggests the nearest known store when
   opened.
@@ -119,8 +137,8 @@ from the user. Old evidence gives way to new.
 
 Not part of the first build. Staging is in open questions H1.
 
-## 12. Out of scope for this tier
+## 13. Out of scope for this tier
 
-Everything tier 1 §3 excludes, plus: multiple lists (Q4), shared lists (H4),
+Everything tier 1 §3 excludes, plus: multiple lists (D9), shared lists (H4),
 manual drag-to-reorder as a teaching signal (H5), and any presentation of
 *why* an entry is where it is.
