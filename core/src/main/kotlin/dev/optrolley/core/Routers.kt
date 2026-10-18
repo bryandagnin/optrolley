@@ -17,5 +17,16 @@ class Routers(val list: List<Router>, val defaultId: String) {
 object FirstSeen : Router {
     override val id = "first-seen"
     override val label = "First seen"
-    override fun order(trips: List<TripOrder>, items: Set<ItemKey>): List<ItemKey> = TODO()
+    override fun order(trips: List<TripOrder>, items: Set<ItemKey>): List<ItemKey> {
+        val first = HashMap<ItemKey, Pair<Int, Int>>()
+        trips.forEachIndexed { t, trip ->
+            trip.groups.forEachIndexed { g, group ->
+                for (item in group) if (item in items) first.putIfAbsent(item, t to g)
+            }
+        }
+        val never = Int.MAX_VALUE to Int.MAX_VALUE
+        return items.sortedWith(
+            compareBy<ItemKey>({ (first[it] ?: never).first }, { (first[it] ?: never).second }, { it.value }),
+        )
+    }
 }
