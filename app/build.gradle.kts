@@ -1,3 +1,5 @@
+import com.android.build.api.artifact.SingleArtifact
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -29,6 +31,22 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
+    }
+}
+
+// O23 is about the manifest that ships, with every library's additions, so
+// ManifestTest reads the variant's merged one rather than the source file or
+// the unit-test manifest (which test libraries add permissions to).
+androidComponents {
+    onVariants { variant ->
+        val manifest = variant.artifacts.get(SingleArtifact.MERGED_MANIFEST)
+        val testTask = "test${variant.name.replaceFirstChar(Char::uppercase)}UnitTest"
+        tasks.withType<Test>().matching { it.name == testTask }.configureEach {
+            inputs.file(manifest).withPropertyName("mergedManifest").withPathSensitivity(PathSensitivity.NONE)
+            jvmArgumentProviders += CommandLineArgumentProvider {
+                listOf("-Doptrolley.mergedManifest=${manifest.get().asFile.absolutePath}")
+            }
+        }
     }
 }
 
