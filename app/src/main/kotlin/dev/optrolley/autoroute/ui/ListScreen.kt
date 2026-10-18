@@ -66,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -362,7 +363,10 @@ private fun EntryRow(entry: Entry, section: SectionKind, state: State, vm: AppVi
         Checkbox(
             checked = entry.ticked,
             onCheckedChange = { vm.setTicked(entry.item, it) },
-            modifier = Modifier.size(56.dp).testTag(Tags.tick(entry.item)),
+            modifier = Modifier
+                .size(56.dp)
+                .semantics { contentDescription = entry.name }
+                .testTag(Tags.tick(entry.item)),
         )
         Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
             Text(
