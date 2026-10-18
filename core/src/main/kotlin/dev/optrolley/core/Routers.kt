@@ -1,5 +1,7 @@
 package dev.optrolley.core
 
+import dev.optrolley.core.routers.Pairwise
+
 /** The routing methods built in (F11), and which one a fresh install uses. */
 class Routers(val list: List<Router>, val defaultId: String) {
     init {
@@ -10,7 +12,7 @@ class Routers(val list: List<Router>, val defaultId: String) {
 
     companion object {
         /** Filled as router candidates land; [FirstSeen] until then. */
-        val all = Routers(listOf(FirstSeen), FirstSeen.id)
+        val all = Routers(listOf(FirstSeen, Pairwise), FirstSeen.id)
     }
 }
 
