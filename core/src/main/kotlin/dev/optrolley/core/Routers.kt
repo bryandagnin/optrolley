@@ -1,6 +1,7 @@
 package dev.optrolley.core
 
 import dev.optrolley.core.routers.Pairwise
+import dev.optrolley.core.routers.Positional
 import dev.optrolley.core.routers.Precedence
 
 /** The routing methods built in (F11), and which one a fresh install uses. */
@@ -12,8 +13,13 @@ class Routers(val list: List<Router>, val defaultId: String) {
     fun byId(id: String): Router = list.firstOrNull { it.id == id } ?: list.first { it.id == defaultId }
 
     companion object {
-        /** Filled as router candidates land; [FirstSeen] until then. */
-        val all = Routers(listOf(FirstSeen, Precedence, Pairwise), FirstSeen.id)
+        /**
+         * Every candidate ships until real trips choose (D12). Positional is the
+         * default as the simplest that passes every oracle (tier 4 §5); pairwise
+         * passes too, by a hair more; precedence misses O18 after a
+         * rearrangement; first-seen is the bar.
+         */
+        val all = Routers(listOf(Positional, Pairwise, Precedence, FirstSeen), Positional.id)
     }
 }
 
