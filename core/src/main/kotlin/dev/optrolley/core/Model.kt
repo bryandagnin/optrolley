@@ -33,7 +33,20 @@ data class State(
     val known: Map<ItemKey, String>,
     /** The routing method that orders the current (or next) trip. */
     val router: String,
+    /** Each linked code and the item its latest link names (F12). */
+    val codes: Map<Barcode, ItemKey>,
+    /** Each linked code's name as linked: the spelling of last resort for an item never typed. */
+    internal val linkedNames: Map<Barcode, String> = emptyMap(),
 )
+
+/**
+ * The name a scan of [code] adds: the latest spelling of the item it is
+ * linked to, or null if it is not linked (F12).
+ */
+fun State.nameFor(code: Barcode): String? {
+    val item = codes[code] ?: return null
+    return known[item] ?: linkedNames[code]
+}
 
 /** Rebuilds the state from a history alone (O21). */
 fun replay(history: List<Observation>): State = Fold(history).state()
@@ -88,6 +101,10 @@ internal class Fold(history: List<Observation>) {
     private val trips = LinkedHashMap<StoreId, MutableList<TripOrder>>()
     private val known = LinkedHashMap<ItemKey, String>()
 
+    /** Latest link per code. A link names an item, so an entry renamed later leaves its code where it was. */
+    private val codes = LinkedHashMap<Barcode, ItemKey>()
+    private val linkedNames = LinkedHashMap<Barcode, String>()
+
     val availability = HashMap<ItemKey, Availability>()
     val ended = ArrayList<EndedTrip>()
     var selected: StoreId? = null
@@ -121,6 +138,8 @@ internal class Fold(history: List<Observation>) {
             trips = trips.mapValues { it.value.toList() },
             known = LinkedHashMap(known),
             router = Routers.all.byId(routerChoice ?: Routers.all.defaultId).id,
+            codes = LinkedHashMap(codes),
+            linkedNames = LinkedHashMap(linkedNames),
         )
     }
 
@@ -160,6 +179,10 @@ internal class Fold(history: List<Observation>) {
             }
             is Observation.TripEnded -> endTrip()
             is Observation.RouterChosen -> chosen = o.router
+            is Observation.CodeLinked -> {
+                codes[o.code] = ItemKey.of(o.name)
+                linkedNames[o.code] = o.name.trim()
+            }
         }
     }
 

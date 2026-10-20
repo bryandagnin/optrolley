@@ -69,6 +69,19 @@ object Tags {
     const val CHAIN_SAVE = "chain-save"
     const val CHAIN_CANCEL = "chain-cancel"
 
+    const val SCAN_BUTTON = "scan"
+    const val SCAN_SCREEN = "scan-screen"
+    const val SCAN_DONE = "scan-done"
+    const val SCAN_MODE_ADD = "scan-mode:add"
+    const val SCAN_MODE_TICK = "scan-mode:tick"
+    fun scanEvent(id: Long) = "scan-event:$id"
+    fun scanUndo(id: Long) = "scan-undo:$id"
+    fun scanChange(id: Long) = "scan-change:$id"
+    const val NAMING_FIELD = "naming-field"
+    const val NAMING_SAVE = "naming-save"
+    const val NAMING_CANCEL = "naming-cancel"
+    fun namingSuggestion(item: ItemKey) = "naming-suggestion:${item.value}"
+
     fun router(id: String) = "router:$id"
     fun lab(id: String) = "lab:$id"
 }

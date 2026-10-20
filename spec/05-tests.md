@@ -1,7 +1,7 @@
 # Tier 5 — Test Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ---
 
@@ -56,6 +56,15 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 | O20–O22 | unit + property | History only grows; rebuild and export/import round-trip to identical presentations. |
 | O23 | build check | Inspect the built package's declared permissions. |
 | O24 | instrumented | Tier 2 walkthrough with radios off. |
+| O41–O45 | unit + property | A scan of a linked code against typing the name; links inserted anywhere move nothing; links survive rebuild and export. Also at the view model, scanning against typing over the same history. |
+| O46 | build check + instrumented | The merged manifest requests `CAMERA` and nothing else. With the camera refused, the scanner does not open and the list still works. |
+| O47 | unit | The export of a history with scans holds only the decoded codes. |
+| O48, O49 | unit + property | A scan to tick against a tap (and against typing then tapping, for an item not on the list), through to what the ended trip teaches; a second scan of a ticked item records nothing. Also at the view model. |
+
+**Decoding without a camera.** The decoder is tested on barcodes rendered by
+ZXing's own encoder, upright and rotated, so the frame-to-code path is
+checked with no camera in the loop. Whether it reads real packs under shop
+lighting is for the phone.
 
 ## 3. The reference simulation suite
 

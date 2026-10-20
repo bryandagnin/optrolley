@@ -179,4 +179,5 @@ fun Observation.copied(): Observation = when (this) {
     is Observation.Selected -> copy()
     is Observation.TripEnded -> copy()
     is Observation.RouterChosen -> copy()
+    is Observation.CodeLinked -> copy()
 }

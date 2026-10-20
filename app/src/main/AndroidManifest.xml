@@ -1,10 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- No <uses-permission> at all (O23): the package holds no network
-     permission, nor anything else. androidx.core declares one of its own for
-     ContextCompat.registerReceiver, which nothing here uses; it is removed so
-     the package stays permission-free. -->
+<!-- The camera and nothing else (D15, O46): no network permission (O23).
+     CAMERA is asked for at the first scan; the camera is an optional feature
+     so a phone without one still installs the app. androidx.core declares a
+     permission of its own for ContextCompat.registerReceiver, which nothing
+     here uses; it is removed. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:tools="http://schemas.android.com/tools">
+
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-feature
+    android:name="android.hardware.camera.any"
+    android:required="false" />
 
   <permission
     android:name="${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"

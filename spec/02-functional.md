@@ -1,7 +1,7 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ---
 
@@ -26,10 +26,12 @@ as the user sees it. How it does it belongs to tier 4.
 | **Unplaced** | Entries with no learned position in the selected store. |
 | **Elsewhere** | Entries the user has said cannot be got at the selected store. |
 | **Observation** | A recorded user action. The raw material of everything learned. |
+| **Code** | A barcode the user has scanned. **Linked** once the user has said which item it means. |
 
 ## 2. The list (F1)
 
-- One list. Add an entry by typing a name; optionally a quantity and a note.
+- One list. Add an entry by typing a name, or by scanning a code (F12);
+  optionally a quantity and a note.
 - Typing suggests items used before.
 - An entry can be edited, removed, ticked and unticked.
 - Adding a name that matches an existing item reuses that item, so what was
@@ -127,7 +129,38 @@ from the user. Old evidence gives way to new.
 
 Once a method is chosen, the setting and the losing methods go.
 
-## 12. Store detection (F10) — later
+## 12. Scanning (F12)
+
+A way to add entries faster, especially at home from the empties, and to
+tick them off in the shop. It does nothing the user could not have typed or
+tapped.
+
+- From the add bar the user opens the scanner and scans codes one after
+  another, with a buzz for each, without leaving it.
+- **A code seen for the first time adds nothing until the user names it.**
+  Naming offers the same suggestions as typing, with the list's own entries
+  first. The name given links the code to that item.
+- **A linked code adds its item exactly as typing its name would**, reusing
+  the item and everything learned about it, and says so, with undo. A code
+  for an item already on the list adds nothing twice; it says the entry is
+  there (F1).
+- **Many codes can mean one item.** Which item a code means is the user's
+  choice. It can be changed at any later scan, and the latest link is what
+  the code means.
+- **Names are where substitutes live.** If any brand of sugar will do, every
+  sugar's code is linked to "sugar"; a preferred brand goes in the entry's
+  note. The app never decides that two items are alike.
+- **The scanner adds or ticks**, by a switch on the scanner that starts on
+  tick while a trip is in progress and on add otherwise. Ticking by scan is
+  ticking: the entry is marked as got, as a tap would mark it, and learning
+  reads it the same way. An item scanned to tick that is not on the list is
+  added and ticked, since it has just been picked up. A scan never unticks,
+  and tapping stays the way to tick for anyone who never scans.
+- The camera is asked for at the first scan, and only then. Without it,
+  everything else works. No image is kept.
+- Links are part of the record: they survive export and import (F9).
+
+## 13. Store detection (F10) — later
 
 - With location permission, the app suggests the nearest known store when
   opened.
@@ -137,7 +170,7 @@ Once a method is chosen, the setting and the losing methods go.
 
 Not part of the first build. Staging is in open questions H1.
 
-## 13. Out of scope for this tier
+## 14. Out of scope for this tier
 
 Everything tier 1 §3 excludes, plus: multiple lists (D9), shared lists (H4),
 manual drag-to-reorder as a teaching signal (H5), and any presentation of

@@ -32,6 +32,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.AlertDialog
@@ -95,6 +96,7 @@ fun ListScreen(
     onOpen: (Screen) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
+    onScan: (() -> Unit)? = null,
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -127,7 +129,7 @@ fun ListScreen(
             )
         },
         bottomBar = {
-            BottomArea(state = state, vm = vm)
+            BottomArea(state = state, vm = vm, onScan = onScan)
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
@@ -464,7 +466,7 @@ private fun EntryMenu(
 }
 
 @Composable
-private fun BottomArea(state: State, vm: AppViewModel) {
+private fun BottomArea(state: State, vm: AppViewModel, onScan: (() -> Unit)?) {
     var text by rememberSaveable { mutableStateOf("") }
     var quantity by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
@@ -542,6 +544,13 @@ private fun BottomArea(state: State, vm: AppViewModel) {
                     value = text,
                     onValueChange = { text = it },
                     placeholder = { Text("Add an item") },
+                    trailingIcon = onScan?.let {
+                        {
+                            IconButton(onClick = it, modifier = Modifier.testTag(Tags.SCAN_BUTTON)) {
+                                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan barcodes")
+                            }
+                        }
+                    },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { submit() }),

@@ -133,6 +133,7 @@ class Shadow {
             }
             is Observation.TripEnded -> if (tripActive) endTrip(index)
             is Observation.RouterChosen -> {}
+            is Observation.CodeLinked -> {}
         }
     }
 

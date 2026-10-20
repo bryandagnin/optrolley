@@ -1,5 +1,6 @@
 package dev.optrolley.autoroute
 
+import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import dev.optrolley.autoroute.scan.CameraScanner
 import dev.optrolley.autoroute.ui.OptrolleyApp
 import dev.optrolley.autoroute.ui.OptrolleyTheme
 import java.io.File
@@ -19,11 +21,12 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val scanner = CameraScanner.takeIf { packageManager.hasSystemFeature(PackageManager.FEATURE_CAMERA_ANY) }
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
             OptrolleyTheme {
-                OptrolleyApp(vm)
+                OptrolleyApp(vm, scanner)
             }
         }
     }

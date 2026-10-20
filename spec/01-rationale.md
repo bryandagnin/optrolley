@@ -1,7 +1,7 @@
 # Tier 1 — Rationale, Core Tenets, Steering
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ---
 
@@ -11,7 +11,8 @@ Written while scaffolding, from a one-line brief ("android shopping list app
 with self-optimising auto-routing") and two answers about scope. The owner
 accepted it as drafted by going ahead with the build (2026-10-18); the field
 trial is where it gets tested. §4 marks which decisions were stated, which
-were inferred, and which were accepted that way.
+were inferred, and which were accepted that way. Barcode scanning (D14–D15)
+was asked for by the owner ahead of the trial and revises §3.
 
 ---
 
@@ -120,8 +121,9 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
 - **Not a price tool.** No prices, no comparison, no offers.
 - **Not a pantry or recipe manager.**
 - **Not shared**, for now. One person, one phone (H4).
-- **Not a product database.** Items are whatever the user typed. No barcodes,
-  no catalogue lookup.
+- **Not a product database.** Items are whatever the user named. No
+  catalogue lookup, no product names from anywhere but the user. A barcode is
+  only the user's own shortcut to a name they chose (D14).
 
 ## 4. Decisions
 
@@ -140,6 +142,8 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
 | D11 | A rearrangement is absorbed within 3 trips (was Q3; values in tier 3). | accepted |
 | D12 | The first build ships every candidate routing method, selectable, and scores each against real trips. Choosing one waits for real data. | stated |
 | D13 | Application id `dev.optrolley.autoroute`, display name "Optrolley", minimum Android 10 (API 29) (was Q6). | accepted |
+| D14 | Camera barcode scanning adds items, and in the shop can tick them, as a shortcut to the user's own names (was H7). With no network there is no catalogue, so a code's first scan asks for a name. Many codes may share one name, and the name chosen is the level at which the user will take a substitute ("sugar" covers every brand of sugar). Item identity stays the name (D10), and routing learns by name. Each scan records the code it read, so per-product use stays derivable later (T5). | stated |
+| D15 | The app may hold the camera permission. It is asked for at the first scan, never required, and no image is kept. It never holds a network permission (T6). | stated |
 
 ## 5. Assumptions not yet tested
 

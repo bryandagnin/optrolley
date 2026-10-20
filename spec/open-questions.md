@@ -1,7 +1,7 @@
 # Open Questions
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 A live register, deliberately outside the spec tiers because it turns over as
 answers arrive. Answered items graduate into the decisions table in
@@ -18,11 +18,9 @@ in tier 1; the values they set are in tier 3.
 
 ## Proposed expansions
 
-Pencilled in by the owner (2026-10-18) as the next features after the field
-trial. Neither is in the first build, and neither is designed: each needs the
-changes to tiers 1–3 listed under it, made and agreed before any code. The
-field trial should say which matters more — typing items in, or picking the
-shop.
+Pencilled in by the owner as next features. None is designed: each needs
+the changes to tiers 1–3 listed under it, made and agreed before any code.
+Barcode scanning (was H7) was brought forward and is now D14–D15 and F12.
 
 ### H1. Geofencing to select the shop
 
@@ -65,41 +63,30 @@ Tiers to change: tier 1 D4 (suggest vs select), tier 2 F10, tier 3 new
 oracles (e.g. no automatic selection during a trip; denied location changes
 nothing).
 
-### H7. Camera barcode scanning
+### H8. Separate writing the list from shopping it
 
-**Status:** proposed expansion. **Conflicts with tier 1 §3** ("Not a product
-database … No barcodes"), which must be revisited first.
+**Status:** proposed by the owner (2026-10-19); not designed.
 
-**What it can and cannot be.** With no network (T6) there is no product
-catalogue: a scan yields a number, not a name. So scanning can only
-*remember the user's own names*: the first scan of a code asks for a name
-(with the usual suggestions); after that, the code adds that item directly.
-Item identity stays the typed name (D10); a code is a shortcut to it.
+Making the list (at home: typing, scanning empties, editing) and walking
+the shop (one-handed: glance, tick, "not here") are different jobs with
+different screens in mind. One screen serves both today. A split might give
+the shop a read-mostly view — bigger rows, nothing that can edit by
+accident — and the home a write view with scanning and editing at hand.
 
-**UX questions to settle before designing:**
+Questions before designing:
 
-- **Where scanning lives.** Most useful at home, scanning empties as they go
-  in the bin (scan-to-add from the add bar). Ticking by scan in the shop is
-  slower than a tap and fights the one-handed glance (T2) — probably not.
-- **Never silent.** A known code adds its item visibly, with undo; an
-  unknown code never adds anything without a name. A code for an item
-  already on the list adds nothing twice (F1) — or bumps the quantity?
-- **Many codes, one item.** Every brand and size of "milk" maps to "milk";
-  which item a code means is the user's choice at first scan ("trim milk" is
-  not "milk", D10). Re-linking a code later is a new observation.
-- **A pile of empties.** A continuous mode that keeps scanning, with a
-  buzz or beep per scan, rather than one scan per tap.
-- **Permission just in time.** `CAMERA` asked for on the first scan only;
-  denying it leaves everything else working. Camera frames are never stored.
-- **Offline decoding.** An on-device decoder (ZXing, or ML Kit's bundled
-  model — not the variant that downloads its model), so O23 still holds.
+- **What switches modes?** By hand, or implied: a store selected and a trip
+  under way (F4) already says "shopping". An implied switch must still leave
+  every entry reachable (O3) and must never move the list (T2).
+- **What the shop view can still do.** Adding mid-trip is allowed (O8, O30)
+  and probably has to stay one tap away; the forgotten-item case is common.
+- **Where scanning goes.** Write side only, as F12 already limits it to
+  adding.
 
-**Record.** A code-to-item link is a new observation kind, so it survives
-export and replay (T5, O21–O22); the export format gains it additively.
-
-Tiers to change: tier 1 §3 and a new decision, tier 2 a new feature, tier 3
-new oracles (e.g. a known code adds the item it was linked to; a scan never
-adds an unnamed item).
+Tiers to change: tier 2 (the modes, and F12's place in them), tier 3
+probably none — the oracles are about the list as presented, not which
+screen shows it — unless the shop view hides an action, which O3 would need
+to allow.
 
 ---
 

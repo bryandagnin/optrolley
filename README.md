@@ -8,7 +8,8 @@ setup. *Optrolley*: **opt**imal trolley.
 ## Status
 
 First build: every router candidate ships, selectable, and the app scores
-each against your real trips. Awaiting a field trial.
+each against your real trips. Barcodes you scan add the items you named
+them as. Awaiting a field trial.
 
 | Tier | | State |
 |------|---|-------|
@@ -20,7 +21,7 @@ each against your real trips. Awaiting a field trial.
 | 6 | Implementation | first build |
 
 [Open questions](./spec/open-questions.md) lists the proposed expansions
-(geofencing, barcode scanning) and what is deferred.
+(geofencing, separate writing and shopping views) and what is deferred.
 
 Build and test in the container: `docker compose run --rm build ./gradlew test`
 (see [tier 4 §2](./spec/04-design.md)).

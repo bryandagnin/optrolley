@@ -1,5 +1,7 @@
 package dev.optrolley.autoroute.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -24,21 +26,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.scan.Scanner
 import java.io.IOException
 import java.time.LocalDate
 
-enum class Screen { LIST, STORES, ROUTING }
+enum class Screen { LIST, STORES, ROUTING, SCAN }
 
+/** [scanner] is null where there is no camera; scanning is then not offered (O46). */
 @Composable
-fun OptrolleyApp(vm: AppViewModel) {
+fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
     val ui by vm.ui.collectAsStateWithLifecycle()
     var screen by rememberSaveable { mutableStateOf(Screen.LIST) }
     val snackbar = remember { SnackbarHostState() }
-    val resolver = LocalContext.current.contentResolver
+    val context = LocalContext.current
+    val resolver = context.contentResolver
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { vm.onResume() }
 
@@ -59,6 +65,19 @@ fun OptrolleyApp(vm: AppViewModel) {
                 input.use { String(it.readBytes(), Charsets.UTF_8) }
             }
         }
+    }
+
+    // Asked for at the first scan, never before (D15). Refused, the list carries on as it was.
+    fun cameraGranted() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted) screen = Screen.SCAN else vm.cameraRefused()
+    }
+    val onScan: (() -> Unit)? = scanner?.let {
+        { if (cameraGranted()) screen = Screen.SCAN else cameraPermission.launch(Manifest.permission.CAMERA) }
+    }
+    // A scanner restored after the camera was revoked in settings goes back to the list.
+    LaunchedEffect(screen) {
+        if (screen == Screen.SCAN && (scanner == null || !cameraGranted())) screen = Screen.LIST
     }
 
     val message = ui.message
@@ -98,8 +117,20 @@ fun OptrolleyApp(vm: AppViewModel) {
                         onOpen = { screen = it },
                         onExport = { exporter.launch("optrolley-${LocalDate.now()}.json") },
                         onImport = { importer.launch(arrayOf("application/json", "text/*", "application/octet-stream")) },
+                        onScan = onScan,
                     )
                     Screen.STORES -> StoresScreen(state = state, snackbar = snackbar, vm = vm, onBack = { screen = Screen.LIST })
+                    Screen.SCAN -> if (scanner != null) {
+                        ScanScreen(
+                            state = state,
+                            scans = ui.scans,
+                            naming = ui.naming,
+                            scanner = scanner,
+                            snackbar = snackbar,
+                            vm = vm,
+                            onBack = { screen = Screen.LIST },
+                        )
+                    }
                     Screen.ROUTING -> RoutingScreen(
                         state = state,
                         lab = ui.lab,

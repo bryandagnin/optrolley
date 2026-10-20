@@ -1,5 +1,7 @@
 package dev.optrolley.core
 
+import kotlinx.serialization.EncodeDefault
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -15,9 +17,20 @@ import kotlinx.serialization.Serializable
 sealed interface Observation {
     val at: Long
 
-    /** Adds an entry for the item [name] matches (see [ItemKey.of]). */
+    /**
+     * Adds an entry for the item [name] matches (see [ItemKey.of]). [code] is
+     * the barcode whose scan added it, or null if the name was typed (D14).
+     */
+    @OptIn(ExperimentalSerializationApi::class)
     @Serializable @SerialName("added")
-    data class Added(override val at: Long, val name: String, val quantity: String? = null, val note: String? = null) : Observation
+    data class Added(
+        override val at: Long,
+        val name: String,
+        val quantity: String? = null,
+        val note: String? = null,
+        // Left out when absent, so a typed add is written as it was before scanning existed.
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val code: Barcode? = null,
+    ) : Observation
 
     /**
      * Changes an entry's details. A new [name] that matches another item
@@ -29,8 +42,14 @@ sealed interface Observation {
     @Serializable @SerialName("removed")
     data class Removed(override val at: Long, val item: ItemKey) : Observation
 
+    /** Marks [item] as got. [code] is the barcode whose scan ticked it, or null for a tap (D14). */
+    @OptIn(ExperimentalSerializationApi::class)
     @Serializable @SerialName("ticked")
-    data class Ticked(override val at: Long, val item: ItemKey) : Observation
+    data class Ticked(
+        override val at: Long,
+        val item: ItemKey,
+        @EncodeDefault(EncodeDefault.Mode.NEVER) val code: Barcode? = null,
+    ) : Observation
 
     @Serializable @SerialName("unticked")
     data class Unticked(override val at: Long, val item: ItemKey) : Observation
@@ -69,6 +88,13 @@ sealed interface Observation {
     /** Chooses the routing method (F11). Takes effect from the next trip. */
     @Serializable @SerialName("router-chosen")
     data class RouterChosen(override val at: Long, val router: String) : Observation
+
+    /**
+     * Links [code] to the item [name] matches, replacing any earlier link for
+     * that code (F12). Adds nothing to the list by itself.
+     */
+    @Serializable @SerialName("code-linked")
+    data class CodeLinked(override val at: Long, val code: Barcode, val name: String) : Observation
 }
 
 @Serializable
@@ -93,3 +119,12 @@ value class StoreId(val value: String)
 @Serializable
 @JvmInline
 value class ChainId(val value: String)
+
+/** A scanned barcode, as the decoder read it, trimmed. Means nothing until linked (F12). */
+@Serializable
+@JvmInline
+value class Barcode(val value: String) {
+    companion object {
+        fun of(raw: String): Barcode = Barcode(raw.trim())
+    }
+}

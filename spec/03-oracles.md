@@ -1,7 +1,7 @@
 # Tier 3 — Predicates and Oracles
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ---
 
@@ -190,6 +190,37 @@ Elsewhere follows the most recent explicit statement (O5), whatever its
 scope; a purchase at a store is such a statement for that store (O6). It
 takes effect from the next trip, since O28 holds the entry in place; a
 "not here" said mid-trip moves the entry at once, being the user's own act.
+
+## H. Scanning
+
+Derived from F12, D14 and D15. Added 2026-10-19 with the owner's go-ahead
+for barcode scanning; written from tiers 1–2 before any design.
+
+- **O41 — A scan is a typed name.** Scanning a linked code gives the same
+  list and the same presentation, at every store, as typing the name of the
+  item it is linked to at that moment.
+- **O42 — No name, no entry.** Scanning a code that is not linked changes
+  nothing on the list. Only naming it does.
+- **O43 — The latest link is the meaning.** A code adds the item of its most
+  recent link. Linking one code never changes what another code adds, and
+  any number of codes may add the same item.
+- **O44 — Links move nothing.** Linking or relinking a code changes no
+  section or order at any store, and no entry on the list.
+- **O45 — Links survive.** After a rebuild (O21), and after export and import
+  into an empty install (O22), every code adds what it added before.
+- **O46 — The camera is optional.** With the camera permission denied, or no
+  camera at all, every function in tier 2 except scanning works. The
+  installed app requests the camera permission and no other; O23 still
+  holds.
+- **O47 — No pictures.** Nothing recorded in the history or written to the
+  export is an image; a scan contributes only the code it read.
+- **O48 — A scan to tick is a tap.** Scanning a linked code to tick gives the
+  same list, the same presentation at every store, and the same learning
+  once the trip ends, as tapping that item's tick at that moment — or, if
+  the item is not on the list, as typing its name and then tapping its tick.
+  Within the trip it moves nothing else (O7, O28).
+- **O49 — A scan never unticks.** Scanning to tick an item already ticked
+  changes nothing.
 
 ---
 

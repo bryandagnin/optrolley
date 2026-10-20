@@ -2,6 +2,7 @@ package dev.optrolley.autoroute
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.optrolley.core.Barcode
 import dev.optrolley.core.ChainId
 import dev.optrolley.core.EndReason
 import dev.optrolley.core.Export
@@ -13,6 +14,7 @@ import dev.optrolley.core.Scope
 import dev.optrolley.core.State
 import dev.optrolley.core.StoreId
 import dev.optrolley.core.TripScore
+import dev.optrolley.core.nameFor
 import dev.optrolley.core.present
 import dev.optrolley.core.replay
 import dev.optrolley.core.score
@@ -41,9 +43,26 @@ data class UiState(
     val lab: Map<String, List<TripScore>>? = null,
     /** An entry to bring into view, e.g. after adding a name already on the list. */
     val focus: ItemKey? = null,
+    /** A scanned code that is not linked, waiting for the user to name it (F12). */
+    val naming: Barcode? = null,
+    /** What each scan this session did, oldest first, for the scanner to show. */
+    val scans: List<ScanEvent> = emptyList(),
 )
 
 data class UiMessage(val text: String, val undo: List<Observation>? = null, val id: Long = System.nanoTime())
+
+/**
+ * One scan of a linked code: the item it means, whether it was added (or
+ * already on the list), and whether it was ticked (scanned to tick, F12).
+ */
+data class ScanEvent(
+    val code: Barcode,
+    val item: ItemKey,
+    val name: String,
+    val added: Boolean,
+    val ticked: Boolean = false,
+    val id: Long = System.nanoTime(),
+)
 
 /**
  * Holds the history and derives everything shown from it. Each action is
@@ -114,6 +133,95 @@ class AppViewModel(
     /** Replays a message's undo, restamped with the time it is actually done. */
     fun undo(message: UiMessage) = act {
         message.undo.orEmpty().map { it.restamped(clock()) }
+    }
+
+    // --- Scanning (F12) ---
+
+    /**
+     * A code read by the scanner. A linked one adds its item as typing its
+     * name would, or says it is already on the list; either way it is logged
+     * in [UiState.scans]. One that is not linked adds nothing and waits in
+     * [UiState.naming] for a name.
+     *
+     * With [tick], a linked code ticks its entry instead, or adds and ticks
+     * it if it is not on the list; one already ticked is left as it is.
+     */
+    fun scanned(code: Barcode, tick: Boolean = false) = act { state ->
+        val name = state.nameFor(code)
+        if (name == null) {
+            // One code is named at a time; another read meanwhile is let go.
+            _ui.update { if (it.naming == null) it.copy(naming = code) else it }
+            return@act emptyList()
+        }
+        logged(scan(state, code, name, tick, clock()))
+    }
+
+    /** Links [code] to the item [name] matches, then adds (or with [tick], ticks) that item as a scan of [code] would. */
+    fun link(code: Barcode, name: String, tick: Boolean = false) = act { state ->
+        val n = name.trim()
+        if (n.isEmpty()) return@act emptyList()
+        _ui.update { it.copy(naming = null) }
+        val now = clock()
+        listOf(Observation.CodeLinked(now, code, n)) + logged(scan(state, code, n, tick, now))
+    }
+
+    /** The user declined to name the code in [UiState.naming]; nothing is recorded. */
+    fun namingDismissed() = _ui.update { it.copy(naming = null) }
+
+    /**
+     * The code of [event] means [name] instead. What that scan did is taken
+     * back if it still stands, the new item is added or ticked in its place
+     * as the scan did, and the log shows the new outcome where the old one was.
+     */
+    fun relink(event: ScanEvent, name: String) = act { state ->
+        val n = name.trim()
+        if (n.isEmpty()) return@act emptyList()
+        val now = clock()
+        val takeBack = if (ItemKey.of(n) == event.item) emptyList() else undone(state, event, now)
+        val (replaced, again) = scan(state, event.code, n, event.ticked, now)
+        _ui.update { ui -> ui.copy(scans = ui.scans.map { if (it.id == event.id) replaced else it }) }
+        takeBack + Observation.CodeLinked(now, event.code, n) + again
+    }
+
+    /** Takes back what [event] did, if it still stands: unticks what it ticked, removes what it added. */
+    fun undoScan(event: ScanEvent) = act { state -> undone(state, event, clock()) }
+
+    /** The camera was refused: nothing changes but a word on why scanning will not open (O46). */
+    fun cameraRefused() = say("Scanning needs the camera. Everything else works without it.")
+
+    /**
+     * What a scan of [code], meaning [name], does: added as typing it would,
+     * or with [tick] ticked as a tap would, added first if not on the list.
+     * An item already on the list is not added twice (F1). One already
+     * ticked records nothing: a second tick would move its final tick, and
+     * with it what the trip teaches (O49).
+     */
+    private fun scan(state: State, code: Barcode, name: String, tick: Boolean, now: Long): Pair<ScanEvent, List<Observation>> {
+        val key = ItemKey.of(name)
+        val entry = state.entries.firstOrNull { it.item == key }
+        val add = Observation.Added(now, name, code = code)
+        val tap = Observation.Ticked(now, key, code)
+        return when {
+            !tick -> ScanEvent(code, key, name, added = entry == null) to listOfNotNull(add.takeIf { entry == null })
+            entry == null -> ScanEvent(code, key, name, added = true, ticked = true) to listOf(add, tap)
+            entry.ticked -> ScanEvent(code, key, name, added = false) to emptyList()
+            else -> ScanEvent(code, key, name, added = false, ticked = true) to listOf(tap)
+        }
+    }
+
+    private fun logged(result: Pair<ScanEvent, List<Observation>>): List<Observation> {
+        _ui.update { it.copy(scans = it.scans + result.first) }
+        return result.second
+    }
+
+    /** What takes back [event], as far as it still stands. A tick already undone, or an add since ticked by hand, is left. */
+    private fun undone(state: State, event: ScanEvent, now: Long): List<Observation> {
+        val entry = state.entries.firstOrNull { it.item == event.item } ?: return emptyList()
+        return when {
+            event.added && (event.ticked || !entry.ticked) -> listOf(Observation.Removed(now, event.item))
+            event.ticked && entry.ticked -> listOf(Observation.Unticked(now, event.item))
+            else -> emptyList()
+        }
     }
 
     // --- Availability ---

@@ -1,7 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-18
+**Last updated:** 2026-10-19
 
 ---
 
@@ -18,8 +18,8 @@ first build; the router is still chosen by data (§5), not here.
 
 - `:core` — plain Kotlin/JVM, no Android dependency. The observation model,
   the presentation function, the router, the simulator.
-- `:app` — Android. UI (Jetpack Compose), storage (SQLite via Room), export,
-  and later location.
+- `:app` — Android. UI (Jetpack Compose), storage, export, the barcode
+  scanner, and later location.
 
 What drives the split:
 
@@ -231,9 +231,75 @@ the thing it judges will share its blind spots.
   next acts after the timeout.
 - **Export and import** through the system file picker, which needs no
   storage permission. Import only into an empty history.
-- **No permissions at all** in the first build (O23).
+- **The camera permission and nothing else** (D15, O46); never a network
+  permission (O23). The camera is declared as an optional feature, so a
+  phone without one can still install the app.
 - **Store detection (F10).** Staged as in open questions H1; not in the first
   build.
+
+### 7.1 Scanning (F12)
+
+**The record.** `CodeLinked(code, name)` links a code to the item `name`
+matches; a later link for the same code replaces it (O43). A scan that adds
+records an ordinary `Added` carrying the `code` it read, so a scan *is* a
+typed name to everything downstream (O41) and the exact product stays in the
+history for later use (D14). `code` is left out of the file when absent, so
+a typed add is written exactly as before and the export stays version 1.
+Files with scans in them cannot be read by a build from before scanning.
+
+**Derived.** `State.codes` maps each code to its latest item. `nameFor(code)`
+gives that item's latest spelling from `known`, so a scan adds what typing
+the current name would. A link alone changes nothing on the list (O44).
+
+**Where it lives.** A scan button in the add bar opens a full-screen
+scanner, with an Add / Tick switch. It starts on Tick while a trip is in
+progress and on Add otherwise; not on whether a store is selected, since the
+selection outlives the trip and empties scanned at home must never tick.
+The switch is not recorded: what it leads to is an ordinary `Added` or
+`Ticked`, which carries the `code` read as `Added` does. Ticking by scan is
+offered, never needed: a tap is quicker for most, and the list is still read
+one-handed (T2).
+
+- **Continuous.** The scanner stays open and accepts code after code, with a
+  haptic buzz per accepted scan (`performHapticFeedback`, which needs no
+  vibrate permission). A code is accepted again only after it has been out
+  of view for 1.5 s, so one held under the camera adds once.
+- **Tick mode:** a known code ticks its entry; one not on the list is added
+  and ticked (O48); one already ticked records nothing (O49) — not a second
+  `Ticked`, which would move its final tick and change what the trip
+  teaches. Undo unticks, or removes what the scan added; Change undoes it
+  and ticks the new item.
+- **Add mode:** a known code is added at once, or "already on the list" (F1), logged on
+  the scanner with Undo (removes it) and Change (relinks: removes the entry
+  this scan added, if it is still unticked, links, adds the new item).
+- **Unknown code:** decoding pauses and a sheet asks for a name, offering the
+  list's own entries first, then known names as the user types. The sheet
+  suggests naming things as they would be written on a list, so that brands
+  can share one name. Cancel records nothing (O42).
+
+**Decoding.** On the device: ZXing's core library on CameraX `ImageAnalysis`
+frames, reading the luminance plane, rotated upright. Retail formats only —
+EAN-13, EAN-8, UPC-A, UPC-E — so a QR code on a pack is not read as a
+product. UPC-A is written in its EAN-13 form (a leading zero), so a pack reads
+the same whichever reader matched it. Each frame is closed as soon as it is
+decoded; nothing from the camera is written anywhere (O47). Not ML Kit: its
+bundled model is offline, but the library brings telemetry and network
+permissions with it, which O23 forbids `[from memory — not checked against
+a build]`. Not CameraX's `camera-view` either: it pulls in `camera-video`
+and media3, whose manifest declares `ACCESS_NETWORK_STATE` [evidence: the
+merged manifest, 2026-10-19]. The viewfinder is `camera-compose` on
+`camera-lifecycle`, and the manifest test catches any library that brings
+a permission back.
+
+**Permission just in time.** `CAMERA` is requested when the scan button is
+first pressed. If it is refused, the scanner does not open, a message says
+the rest of the app works without it, and the next press asks again where
+Android allows it (O46).
+
+**Known limit.** Loose produce sold by weight often carries an in-store code
+that encodes its price, so each pack reads differently and a link to one
+never matches the next. Such codes still link, but only to that pack. This
+is left alone until the field trial shows whether it matters.
 
 ## 8. Internal predicates (tier 4 — NOT frozen)
 
