@@ -70,8 +70,7 @@ object Tags {
     const val CHAIN_CANCEL = "chain-cancel"
 
     const val SCAN_BUTTON = "scan"
-    const val SCAN_SCREEN = "scan-screen"
-    const val SCAN_DONE = "scan-done"
+    const val SCAN_MINIMAP = "scan-minimap"
     const val SCAN_MODE_ADD = "scan-mode:add"
     const val SCAN_MODE_TICK = "scan-mode:tick"
     fun scanEvent(id: Long) = "scan-event:$id"

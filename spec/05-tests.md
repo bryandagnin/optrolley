@@ -1,7 +1,7 @@
 # Tier 5 — Test Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-22
 
 ---
 
@@ -60,6 +60,7 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 | O46 | build check + instrumented | The merged manifest requests `CAMERA` and nothing else. With the camera refused, the scanner does not open and the list still works. |
 | O47 | unit | The export of a history with scans holds only the decoded codes. |
 | O48, O49 | unit + property | A scan to tick against a tap (and against typing then tapping, for an item not on the list), through to what the ended trip teaches; a second scan of a ticked item records nothing. Also at the view model. |
+| O50–O54 | unit + property | Confidence against a reference written from tier 3 §I alone, edge cases at each threshold, the same run under two routers, stability within a trip, and the move scenario under every router. |
 
 **Decoding without a camera.** The decoder is tested on barcodes rendered by
 ZXing's own encoder, upright and rotated, so the frame-to-code path is

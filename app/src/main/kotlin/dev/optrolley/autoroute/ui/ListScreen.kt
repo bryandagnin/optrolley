@@ -1,5 +1,6 @@
 package dev.optrolley.autoroute.ui
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -41,7 +42,6 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -66,10 +66,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -77,12 +84,17 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.ScanEvent
+import dev.optrolley.autoroute.scan.Scanner
+import dev.optrolley.core.Barcode
+import dev.optrolley.core.Confidence
 import dev.optrolley.core.Entry
 import dev.optrolley.core.ItemKey
 import dev.optrolley.core.Presentation
 import dev.optrolley.core.Scope
 import dev.optrolley.core.SectionKind
 import dev.optrolley.core.State
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -97,10 +109,23 @@ fun ListScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onScan: (() -> Unit)? = null,
+    /** Set while the corner viewfinder is on (D17). */
+    scanner: Scanner? = null,
+    scans: List<ScanEvent> = emptyList(),
+    naming: Barcode? = null,
+    confidence: Map<ItemKey, Confidence> = emptyMap(),
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
     var editing by remember { mutableStateOf<Entry?>(null) }
+    var changing by remember { mutableStateOf<ScanEvent?>(null) }
+    // Tick while a trip is under way, add otherwise; chosen when the camera
+    // comes on, not by the selected store, which outlives the trip (tier 4 §7.1).
+    var tick by rememberSaveable(scanner != null) { mutableStateOf(state.trip != null) }
+
+    // The entry a scan just added or ticked is brought into view and marked for a moment.
+    val lastScan = scans.lastOrNull()
+    var flash by remember { mutableStateOf<ItemKey?>(null) }
 
     // Lazy-list indices of headers and entries, for scrolling to one.
     val keys = remember(presentation) {
@@ -110,6 +135,18 @@ fun ListScreen(
                 s.entries.forEach { add(entryKey(it.item)) }
             }
         }
+    }
+
+    LaunchedEffect(lastScan?.id) {
+        flash = lastScan?.item ?: return@LaunchedEffect
+        delay(1_500)
+        flash = null
+    }
+    // Separate from the flash: the log can learn of a scan before the list
+    // holds the entry it added, so this waits for the row to exist.
+    LaunchedEffect(flash, keys) {
+        val index = flash?.let { keys.indexOf(entryKey(it)) } ?: -1
+        if (index >= 0) listState.animateScrollToItem(index)
     }
 
     LaunchedEffect(focus, keys) {
@@ -125,11 +162,27 @@ fun ListScreen(
         topBar = {
             TopAppBar(
                 title = { StorePicker(state, onSelect = vm::select, onManage = { onOpen(Screen.STORES) }) },
-                actions = { Overflow(onOpen, onExport, onImport) },
+                actions = {
+                    if (state.trip != null) {
+                        TextButton(onClick = vm::finishTrip, modifier = Modifier.testTag(Tags.FINISH_TRIP)) { Text("Done") }
+                    }
+                    Overflow(onOpen, onExport, onImport)
+                },
             )
         },
         bottomBar = {
-            BottomArea(state = state, vm = vm, onScan = onScan)
+            BottomArea(
+                state = state,
+                vm = vm,
+                onScan = onScan,
+                scanning = scanner != null,
+                lastScan = lastScan,
+                tick = tick,
+                onTick = { tick = it },
+                onChange = { changing = it },
+            ) {
+                scanner?.let { Minimap(it, paused = naming != null || changing != null, tick = tick, vm = vm) }
+            }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
@@ -169,11 +222,35 @@ fun ListScreen(
                             state = state,
                             vm = vm,
                             onEdit = { editing = entry },
+                            confidence = if (section.kind == SectionKind.RUN) confidence[entry.item] else null,
+                            flash = flash == entry.item,
                         )
                     }
                 }
             }
         }
+    }
+
+    if (scanner != null && naming != null) {
+        NamingDialog(
+            title = "New barcode",
+            initial = "",
+            state = state,
+            onDismiss = vm::namingDismissed,
+            onSave = { vm.link(naming, it, tick) },
+        )
+    }
+    changing?.let { event ->
+        NamingDialog(
+            title = "What is this code?",
+            initial = event.name,
+            state = state,
+            onDismiss = { changing = null },
+            onSave = {
+                vm.relink(event, it)
+                changing = null
+            },
+        )
     }
 
     editing?.let { entry ->
@@ -344,14 +421,38 @@ private fun SectionHeader(kind: SectionKind, count: Int, state: State) {
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun EntryRow(entry: Entry, section: SectionKind, state: State, vm: AppViewModel, onEdit: () -> Unit) {
+private fun EntryRow(
+    entry: Entry,
+    section: SectionKind,
+    state: State,
+    vm: AppViewModel,
+    onEdit: () -> Unit,
+    confidence: Confidence? = null,
+    flash: Boolean = false,
+) {
     var menu by remember { mutableStateOf(false) }
     val dim = if (entry.ticked) 0.55f else 1f
-    val background = if (section == SectionKind.ELSEWHERE) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surface
+    val colors = MaterialTheme.colorScheme
+    // The less sure the place, the warmer the row; settled rows are plain (D16).
+    val resting = when {
+        section == SectionKind.ELSEWHERE -> colors.surfaceContainerHighest
+        confidence == Confidence.TENTATIVE -> colors.tertiaryContainer.copy(alpha = 0.45f).compositeOver(colors.surface)
+        confidence == Confidence.SETTLING -> colors.tertiaryContainer.copy(alpha = 0.2f).compositeOver(colors.surface)
+        else -> colors.surface
+    }
+    val background by animateColorAsState(if (flash) colors.primaryContainer else resting, label = "row")
+    val bar = when (confidence) {
+        Confidence.SETTLED -> colors.primary
+        Confidence.SETTLING -> colors.tertiary
+        Confidence.TENTATIVE -> colors.outline
+        null -> null
+    }
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(background)
+            .drawBehind { if (bar != null && confidence != null) drawConfidenceBar(confidence, bar) }
+            .semantics { if (confidence != null) stateDescription = "Place ${confidence.name.lowercase()}" }
             .heightIn(min = 64.dp)
             .combinedClickable(
                 onClick = { vm.setTicked(entry.item, !entry.ticked) },
@@ -466,7 +567,17 @@ private fun EntryMenu(
 }
 
 @Composable
-private fun BottomArea(state: State, vm: AppViewModel, onScan: (() -> Unit)?) {
+private fun BottomArea(
+    state: State,
+    vm: AppViewModel,
+    onScan: (() -> Unit)?,
+    scanning: Boolean,
+    lastScan: ScanEvent?,
+    tick: Boolean,
+    onTick: (Boolean) -> Unit,
+    onChange: (ScanEvent) -> Unit,
+    camera: @Composable () -> Unit,
+) {
     var text by rememberSaveable { mutableStateOf("") }
     var quantity by rememberSaveable { mutableStateOf("") }
     var note by rememberSaveable { mutableStateOf("") }
@@ -494,72 +605,73 @@ private fun BottomArea(state: State, vm: AppViewModel, onScan: (() -> Unit)?) {
     }
 
     Surface(tonalElevation = 3.dp, shadowElevation = 3.dp) {
-        Column(Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)).padding(8.dp)) {
-            if (state.trip != null) {
-                Row(Modifier.fillMaxWidth().padding(bottom = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "Trip in progress",
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.weight(1f).padding(start = 8.dp),
-                    )
-                    FilledTonalButton(onClick = vm::finishTrip, modifier = Modifier.testTag(Tags.FINISH_TRIP)) {
-                        Text("Finish trip")
+        Row(Modifier.windowInsetsPadding(WindowInsets.ime.union(WindowInsets.navigationBars)).padding(8.dp), verticalAlignment = Alignment.Bottom) {
+            Column(Modifier.weight(1f)) {
+                if (scanning) {
+                    lastScan?.let { LastScan(it, state, vm, onChange = { onChange(it) }) }
+                    ScanModeSwitch(tick, onTick, Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 4.dp))
+                }
+                if (suggestions.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
+                        items(suggestions, key = { it.key.value }) { (key, name) ->
+                            SuggestionChip(
+                                onClick = { submit(name) },
+                                label = { Text(name) },
+                                modifier = Modifier.testTag(Tags.suggestion(key)),
+                            )
+                        }
                     }
                 }
-            }
-            if (suggestions.isNotEmpty()) {
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(horizontal = 4.dp)) {
-                    items(suggestions, key = { it.key.value }) { (key, name) ->
-                        SuggestionChip(
-                            onClick = { submit(name) },
-                            label = { Text(name) },
-                            modifier = Modifier.testTag(Tags.suggestion(key)),
+                if (details) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                        OutlinedTextField(
+                            value = quantity,
+                            onValueChange = { quantity = it },
+                            label = { Text("Quantity") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f).testTag(Tags.ADD_QUANTITY),
+                        )
+                        OutlinedTextField(
+                            value = note,
+                            onValueChange = { note = it },
+                            label = { Text("Note") },
+                            singleLine = true,
+                            modifier = Modifier.weight(2f).testTag(Tags.ADD_NOTE),
                         )
                     }
                 }
-            }
-            if (details) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(bottom = 4.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconToggleButton(checked = details, onCheckedChange = { details = it }, modifier = Modifier.testTag(Tags.ADD_DETAILS)) {
+                        Icon(Icons.Default.Tune, contentDescription = "Quantity and note")
+                    }
                     OutlinedTextField(
-                        value = quantity,
-                        onValueChange = { quantity = it },
-                        label = { Text("Quantity") },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f).testTag(Tags.ADD_QUANTITY),
-                    )
-                    OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        label = { Text("Note") },
-                        singleLine = true,
-                        modifier = Modifier.weight(2f).testTag(Tags.ADD_NOTE),
-                    )
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconToggleButton(checked = details, onCheckedChange = { details = it }, modifier = Modifier.testTag(Tags.ADD_DETAILS)) {
-                    Icon(Icons.Default.Tune, contentDescription = "Quantity and note")
-                }
-                OutlinedTextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    placeholder = { Text("Add an item") },
-                    trailingIcon = onScan?.let {
-                        {
-                            IconButton(onClick = it, modifier = Modifier.testTag(Tags.SCAN_BUTTON)) {
-                                Icon(Icons.Default.QrCodeScanner, contentDescription = "Scan barcodes")
+                        value = text,
+                        onValueChange = { text = it },
+                        placeholder = { Text("Add an item") },
+                        trailingIcon = onScan?.let {
+                            {
+                                IconToggleButton(checked = scanning, onCheckedChange = { _ -> it() }, modifier = Modifier.testTag(Tags.SCAN_BUTTON)) {
+                                    Icon(
+                                        Icons.Default.QrCodeScanner,
+                                        contentDescription = if (scanning) "Stop scanning" else "Scan barcodes",
+                                    )
+                                }
                             }
-                        }
-                    },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { submit() }),
-                    modifier = Modifier.weight(1f).testTag(Tags.ADD_FIELD),
-                )
-                Spacer(Modifier.width(8.dp))
-                FilledIconButton(onClick = { submit() }, enabled = text.isNotBlank(), modifier = Modifier.testTag(Tags.ADD_BUTTON)) {
-                    Icon(Icons.Default.Add, contentDescription = "Add")
+                        },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(onDone = { submit() }),
+                        modifier = Modifier.weight(1f).testTag(Tags.ADD_FIELD),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    FilledIconButton(onClick = { submit() }, enabled = text.isNotBlank(), modifier = Modifier.testTag(Tags.ADD_BUTTON)) {
+                        Icon(Icons.Default.Add, contentDescription = "Add")
+                    }
                 }
+            }
+            if (scanning) {
+                Spacer(Modifier.width(8.dp))
+                camera()
             }
         }
     }
@@ -609,4 +721,25 @@ private fun EditDialog(entry: Entry, onDismiss: () -> Unit, onSave: (String, Str
             TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.EDIT_CANCEL)) { Text("Cancel") }
         },
     )
+}
+
+/**
+ * The confidence bar at a Run row's start edge. Its shape carries the level
+ * as well as its colour: whole for settled, half for settling, dotted for
+ * tentative.
+ */
+private fun DrawScope.drawConfidenceBar(confidence: Confidence, color: Color) {
+    val width = 4.dp.toPx()
+    when (confidence) {
+        Confidence.SETTLED -> drawRect(color, size = Size(width, size.height))
+        Confidence.SETTLING -> drawRect(color, topLeft = Offset(0f, size.height / 4), size = Size(width, size.height / 2))
+        Confidence.TENTATIVE -> {
+            val step = width * 3
+            var y = step / 2
+            while (y < size.height) {
+                drawCircle(color, radius = width / 2, center = Offset(width / 2, y))
+                y += step
+            }
+        }
+    }
 }

@@ -1,7 +1,7 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-22
 
 ---
 
@@ -80,6 +80,12 @@ plain list of T3. Nothing about cold start is a special case.
 During a trip the order is frozen (T2). An entry added mid-trip is inserted
 where it belongs without moving anything else.
 
+**Confidence.** Each entry in the Run shows how well its place is borne out
+by the user's own recent walks of that store: *tentative*, *settling* or
+*settled* (D16). It is not shown by colour alone. Like the order, it is
+fixed for the length of a trip and changes only from the next one. It says
+how sure the run is, never why.
+
 ## 7. Availability (F6)
 
 Three states for an item at a store: got here before, said to be not here,
@@ -135,8 +141,13 @@ A way to add entries faster, especially at home from the empties, and to
 tick them off in the shop. It does nothing the user could not have typed or
 tapped.
 
-- From the add bar the user opens the scanner and scans codes one after
-  another, with a buzz for each, without leaving it.
+- **Scanning happens on the list itself** (D17). From the add bar the user
+  turns the camera on; a small viewfinder sits in the corner beside the add
+  bar, never over an entry, and codes are read one after another with a
+  buzz for each. The entry a scan adds or ticks is brought into view and
+  marked for a moment, and the last scan is shown above the add bar with
+  undo. The camera stays on until the user turns it off, finishes the trip
+  or leaves the app.
 - **A code seen for the first time adds nothing until the user names it.**
   Naming offers the same suggestions as typing, with the list's own entries
   first. The name given links the code to that item.
@@ -150,7 +161,7 @@ tapped.
 - **Names are where substitutes live.** If any brand of sugar will do, every
   sugar's code is linked to "sugar"; a preferred brand goes in the entry's
   note. The app never decides that two items are alike.
-- **The scanner adds or ticks**, by a switch on the scanner that starts on
+- **The scanner adds or ticks**, by a switch beside it that starts on
   tick while a trip is in progress and on add otherwise. Ticking by scan is
   ticking: the entry is marked as got, as a tap would mark it, and learning
   reads it the same way. An item scanned to tick that is not on the list is
@@ -174,4 +185,4 @@ Not part of the first build. Staging is in open questions H1.
 
 Everything tier 1 §3 excludes, plus: multiple lists (D9), shared lists (H4),
 manual drag-to-reorder as a teaching signal (H5), and any presentation of
-*why* an entry is where it is.
+*why* an entry is where it is (how sure the run is, F5, is not why).

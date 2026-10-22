@@ -1,7 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-22
 
 ---
 
@@ -198,6 +198,17 @@ position, constrained so directly observed and recently repeated pairs hold
 that runs against what was learned as walked from the other door, and learn
 from its mirror — H6's proposed answer, which the field trial must confirm.
 
+**Confidence (D16, tier 3 §I).** `confidence()` reads the presented run and
+the store's ended trips, and nothing a router keeps to itself, so every
+router is judged by one rule (O52). For each trip it first decides the
+direction: forwards if no more than half of its counted pairs among Run
+items disagree with the run, otherwise mirrored. Then for each Run item it
+takes the last three trips that witness it and averages their agreement.
+It is computed from ended trips only, so it holds still for a trip (O53).
+Shown as a coloured bar at the start of each Run row, with the level in the
+row's accessibility description: a full bar for settled, a half bar for
+settling, a dotted bar for tentative, so it is never colour alone.
+
 ## 6. The simulator — the oracle for O18
 
 A synthetic shop and a synthetic shopper, so that "it gets better" is a
@@ -251,16 +262,21 @@ Files with scans in them cannot be read by a build from before scanning.
 gives that item's latest spelling from `known`, so a scan adds what typing
 the current name would. A link alone changes nothing on the list (O44).
 
-**Where it lives.** A scan button in the add bar opens a full-screen
-scanner, with an Add / Tick switch. It starts on Tick while a trip is in
-progress and on Add otherwise; not on whether a store is selected, since the
+**Where it lives (D17).** On the list screen. The scan button in the add bar
+turns on a small viewfinder in the bottom corner, beside the add bar and
+never over an entry (O3), with an Add / Tick switch and a line above the add
+field for the last scan, with Undo and Change. The entry a scan adds or
+ticks is scrolled into view and its row flashes. The camera stays on until
+turned off, the trip is finished, or the app goes to the background; then
+the viewfinder goes and the camera is released. The switch starts on Tick
+while a trip is in progress and on Add otherwise; not on whether a store is selected, since the
 selection outlives the trip and empties scanned at home must never tick.
 The switch is not recorded: what it leads to is an ordinary `Added` or
 `Ticked`, which carries the `code` read as `Added` does. Ticking by scan is
 offered, never needed: a tap is quicker for most, and the list is still read
 one-handed (T2).
 
-- **Continuous.** The scanner stays open and accepts code after code, with a
+- **Continuous.** The viewfinder accepts code after code, with a
   haptic buzz per accepted scan (`performHapticFeedback`, which needs no
   vibrate permission). A code is accepted again only after it has been out
   of view for 1.5 s, so one held under the camera adds once.

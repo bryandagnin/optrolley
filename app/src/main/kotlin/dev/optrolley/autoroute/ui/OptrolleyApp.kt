@@ -35,7 +35,7 @@ import dev.optrolley.autoroute.scan.Scanner
 import java.io.IOException
 import java.time.LocalDate
 
-enum class Screen { LIST, STORES, ROUTING, SCAN }
+enum class Screen { LIST, STORES, ROUTING }
 
 /** [scanner] is null where there is no camera; scanning is then not offered (O46). */
 @Composable
@@ -69,15 +69,27 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
 
     // Asked for at the first scan, never before (D15). Refused, the list carries on as it was.
     fun cameraGranted() = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+    // The corner viewfinder is on only while asked for (D17): off again when
+    // the trip is finished or the app leaves the screen, which releases the camera.
+    var scanning by rememberSaveable { mutableStateOf(false) }
     val cameraPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) screen = Screen.SCAN else vm.cameraRefused()
+        if (granted) scanning = true else vm.cameraRefused()
     }
     val onScan: (() -> Unit)? = scanner?.let {
-        { if (cameraGranted()) screen = Screen.SCAN else cameraPermission.launch(Manifest.permission.CAMERA) }
+        {
+            when {
+                scanning -> scanning = false
+                cameraGranted() -> scanning = true
+                else -> cameraPermission.launch(Manifest.permission.CAMERA)
+            }
+        }
     }
-    // A scanner restored after the camera was revoked in settings goes back to the list.
-    LaunchedEffect(screen) {
-        if (screen == Screen.SCAN && (scanner == null || !cameraGranted())) screen = Screen.LIST
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { scanning = false }
+    val inTrip = ui.state?.trip != null
+    var wasInTrip by remember { mutableStateOf(inTrip) }
+    LaunchedEffect(inTrip) {
+        if (wasInTrip && !inTrip) scanning = false
+        wasInTrip = inTrip
     }
 
     val message = ui.message
@@ -118,19 +130,12 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
                         onExport = { exporter.launch("optrolley-${LocalDate.now()}.json") },
                         onImport = { importer.launch(arrayOf("application/json", "text/*", "application/octet-stream")) },
                         onScan = onScan,
+                        scanner = scanner?.takeIf { scanning },
+                        scans = ui.scans,
+                        naming = ui.naming,
+                        confidence = ui.confidence,
                     )
                     Screen.STORES -> StoresScreen(state = state, snackbar = snackbar, vm = vm, onBack = { screen = Screen.LIST })
-                    Screen.SCAN -> if (scanner != null) {
-                        ScanScreen(
-                            state = state,
-                            scans = ui.scans,
-                            naming = ui.naming,
-                            scanner = scanner,
-                            snackbar = snackbar,
-                            vm = vm,
-                            onBack = { screen = Screen.LIST },
-                        )
-                    }
                     Screen.ROUTING -> RoutingScreen(
                         state = state,
                         lab = ui.lab,

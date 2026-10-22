@@ -1,7 +1,7 @@
 # Tier 1 — Rationale, Core Tenets, Steering
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-22
 
 ---
 
@@ -144,6 +144,8 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
 | D13 | Application id `dev.optrolley.autoroute`, display name "Optrolley", minimum Android 10 (API 29) (was Q6). | accepted |
 | D14 | Camera barcode scanning adds items, and in the shop can tick them, as a shortcut to the user's own names (was H7). With no network there is no catalogue, so a code's first scan asks for a name. Many codes may share one name, and the name chosen is the level at which the user will take a substitute ("sugar" covers every brand of sugar). Item identity stays the name (D10), and routing learns by name. Each scan records the code it read, so per-product use stays derivable later (T5). | stated |
 | D15 | The app may hold the camera permission. It is asked for at the first scan, never required, and no image is kept. It never holds a network permission (T6). | stated |
+| D16 | Each Run entry shows a confidence level, one rule for every routing method: how well its presented place agrees with the user's last few walks of that store. It can fall as well as rise, so a moved item is not shown as settled. | stated |
+| D17 | Scanning happens inline on the list, with a small corner viewfinder the user turns on, not on a screen of its own. | stated |
 
 ## 5. Assumptions not yet tested
 

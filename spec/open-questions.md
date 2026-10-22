@@ -1,7 +1,7 @@
 # Open Questions
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-22
 
 A live register, deliberately outside the spec tiers because it turns over as
 answers arrive. Answered items graduate into the decisions table in
@@ -80,8 +80,9 @@ Questions before designing:
   every entry reachable (O3) and must never move the list (T2).
 - **What the shop view can still do.** Adding mid-trip is allowed (O8, O30)
   and probably has to stay one tap away; the forgotten-item case is common.
-- **Where scanning goes.** Write side only, as F12 already limits it to
-  adding.
+- **Where scanning goes.** Scanning now happens inline on the list (D17)
+  and both adds and ticks (F12), so it belongs to both views; the shop view
+  may want the camera on by default.
 
 Tiers to change: tier 2 (the modes, and F12's place in them), tier 3
 probably none — the oracles are about the list as presented, not which

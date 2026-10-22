@@ -1,7 +1,7 @@
 # Tier 3 — Predicates and Oracles
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-19
+**Last updated:** 2026-10-22
 
 ---
 
@@ -221,6 +221,42 @@ for barcode scanning; written from tiers 1–2 before any design.
   Within the trip it moves nothing else (O7, O28).
 - **O49 — A scan never unticks.** Scanning to tick an item already ticked
   changes nothing.
+
+## I. Confidence
+
+Derived from F5 and D16. Added 2026-10-22 with the owner's agreement.
+
+- **Witness**: an ended trip at the store that ticked the item in a
+  different tie group from at least one other item now in the Run. Its
+  **last witnesses** are its three most recent, or as many as there are.
+- **Agreement** of a witness: of the pairs it ticked in different tie
+  groups between the item and another item now in the Run, the share
+  ticked in the order presented. A trip that ran against the presented order
+  for more than half of all such pairs among the Run's items was walked from
+  the other door, and is read in mirror, as learning reads it (H6).
+- **Confidence** of a Run entry: **settled** if it has three last witnesses
+  and their mean agreement is at least **0.8**; **tentative** if it has one
+  or none, or their mean agreement is below **0.6**; otherwise **settling**.
+  The mean is the plain mean of each witness's share, compared exactly.
+
+- **O50 — Run only.** Every entry in the Run has exactly one confidence;
+  entries in other sections, and with no store selected, have none.
+- **O51 — As defined.** Each Run entry's confidence is the one the
+  definition above gives from the history and the presentation.
+- **O52 — One rule for every method.** Two routing methods that present the
+  same run at a store give every entry in it the same confidence.
+- **O53 — It holds still.** Confidence is a function of the history and the
+  selected store (O19). Within a trip it is unchanged by ticking, unticking,
+  editing details, or anything else that leaves the same entries in the Run
+  (as O29); it is unchanged by permuting ticks within a tie window (as
+  O15), and at one store by anything done at another (as O16). Adding,
+  removing or moving an entry out of the Run mid-trip may change others',
+  since agreement is counted against the Run as it stands.
+- **O54 — It can fall.** If every trip at a store has walked the same four
+  or more items in one order, and the next walks the first of them last, or
+  the last first, with the rest in order, that item is not settled after
+  it, under every routing method that ships. (With three or fewer, such a
+  trip runs against most pairs and is read as walked from the other door.)
 
 ---
 

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.optrolley.core.Barcode
 import dev.optrolley.core.ChainId
+import dev.optrolley.core.Confidence
 import dev.optrolley.core.EndReason
 import dev.optrolley.core.Export
 import dev.optrolley.core.ItemKey
@@ -14,6 +15,7 @@ import dev.optrolley.core.Scope
 import dev.optrolley.core.State
 import dev.optrolley.core.StoreId
 import dev.optrolley.core.TripScore
+import dev.optrolley.core.confidence
 import dev.optrolley.core.nameFor
 import dev.optrolley.core.present
 import dev.optrolley.core.replay
@@ -37,6 +39,8 @@ data class UiState(
     val history: List<Observation> = emptyList(),
     val state: State? = null,
     val presentation: Presentation? = null,
+    /** How well each Run entry's place is borne out (D16), by item. */
+    val confidence: Map<ItemKey, Confidence> = emptyMap(),
     /** Set when the record cannot be read; nothing is written until it is fixed. */
     val fatal: String? = null,
     val message: UiMessage? = null,
@@ -359,8 +363,8 @@ class AppViewModel(
 
     private suspend fun recompute() {
         val h = history
-        val (state, presentation) = withContext(compute) { replay(h) to present(h, routers) }
-        _ui.update { it.copy(history = h, state = state, presentation = presentation, lab = null) }
+        val (state, presentation, sureness) = withContext(compute) { Triple(replay(h), present(h, routers), confidence(h, routers)) }
+        _ui.update { it.copy(history = h, state = state, presentation = presentation, confidence = sureness, lab = null) }
     }
 
     private fun say(text: String) = _ui.update { it.copy(message = UiMessage(text)) }

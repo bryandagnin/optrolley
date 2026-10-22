@@ -13,7 +13,6 @@ import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.performTextReplacement
@@ -38,9 +37,9 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
-/** The scanner screen, with codes fed in by hand where the camera would be (F12, O46). */
+/** Scanning on the list, with codes fed in by hand where the camera would be (F12, D17, O46). */
 @RunWith(AndroidJUnit4::class)
-class ScanScreenTest {
+class InlineScanTest {
     @get:Rule(order = 0)
     val uncaught = RethrowUncaught()
 
@@ -96,7 +95,7 @@ class ScanScreenTest {
     private fun openScanner() {
         compose.onNodeWithTag(Tags.SCAN_BUTTON).performClick()
         compose.waitForIdle()
-        compose.onNodeWithTag(Tags.SCAN_SCREEN).assertIsDisplayed()
+        compose.onNodeWithTag(Tags.SCAN_MINIMAP).assertIsDisplayed()
     }
 
     @Test
@@ -115,7 +114,7 @@ class ScanScreenTest {
         assertTrue(scanner.active)
         assertTrue(ItemKey("sugar") in entries())
         val event = vm.ui.value.scans.single()
-        compose.onNodeWithTag(Tags.scanEvent(event.id)).assertTextContains("Added", substring = true)
+        compose.onNodeWithTag(Tags.scanEvent(event.id)).assertTextContains("Sugar added", substring = true)
     }
 
     @Test
@@ -141,7 +140,7 @@ class ScanScreenTest {
         compose.onNodeWithTag(Tags.scanUndo(event.id)).performClick()
         compose.waitForIdle()
         assertFalse(ItemKey("sugar") in entries())
-        compose.onNodeWithTag(Tags.scanEvent(event.id)).assertTextContains("Undone", substring = true)
+        compose.onNodeWithTag(Tags.scanEvent(event.id)).assertTextContains("Sugar undone", substring = true)
     }
 
     @Test
@@ -160,14 +159,34 @@ class ScanScreenTest {
     }
 
     @Test
-    fun `done goes back to the list, with the scanned entry on it`() {
+    fun `a scanned entry is brought into view, and the camera goes off at a second press`() {
         launch(AppFixture.history + Observation.CodeLinked(AppFixture.START + 55_000, sugarA, "Sugar"))
         openScanner()
         scan(sugarA)
-        compose.onNodeWithTag(Tags.SCAN_DONE).performClick()
-        compose.waitForIdle()
-        compose.onNodeWithTag(Tags.LIST).performScrollToNode(hasTestTag(Tags.entry(ItemKey("sugar"))))
+        compose.mainClock.advanceTimeBy(2_000)
         compose.onNodeWithTag(Tags.entry(ItemKey("sugar"))).assertIsDisplayed()
+        compose.onNodeWithTag(Tags.SCAN_BUTTON).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag(Tags.SCAN_MINIMAP).assertDoesNotExist()
+        assertTrue(ItemKey("sugar") in entries())
+    }
+
+    @Test
+    fun `O3 the viewfinder never covers the list`() {
+        launch()
+        openScanner()
+        val list = compose.onNodeWithTag(Tags.LIST).fetchSemanticsNode().boundsInRoot
+        val camera = compose.onNodeWithTag(Tags.SCAN_MINIMAP).fetchSemanticsNode().boundsInRoot
+        assertFalse(list.overlaps(camera), "list $list, viewfinder $camera")
+    }
+
+    @Test
+    fun `finishing the trip turns the camera off`() {
+        launch(midTrip)
+        openScanner()
+        compose.onNodeWithTag(Tags.FINISH_TRIP).performClick()
+        compose.waitForIdle()
+        compose.onNodeWithTag(Tags.SCAN_MINIMAP).assertDoesNotExist()
     }
 
     @Test
@@ -187,7 +206,7 @@ class ScanScreenTest {
         compose.runOnIdle { vm.cameraRefused() }
         compose.waitForIdle()
         assertEquals(before, vm.ui.value.history)
-        compose.onNodeWithTag(Tags.SCAN_SCREEN).assertDoesNotExist()
+        compose.onNodeWithTag(Tags.SCAN_MINIMAP).assertDoesNotExist()
         compose.onNodeWithTag(Tags.LIST).assertIsDisplayed()
     }
 
@@ -218,7 +237,7 @@ class ScanScreenTest {
         scan(sugarA)
         assertTrue(ticked(AppFixture.BREAD))
         val event = vm.ui.value.scans.single()
-        compose.onNodeWithTag(Tags.scanEvent(event.id)).assertTextContains("Ticked", substring = true)
+        compose.onNodeWithTag(Tags.scanEvent(event.id)).assertTextContains("Bread ticked", substring = true)
     }
 
     @Test
@@ -234,13 +253,14 @@ class ScanScreenTest {
         launch(midTrip)
         openScanner()
         scan(sugarA)
-        scan(sugarB)
-        val (bread, sugar) = vm.ui.value.scans
-        compose.onNodeWithTag(Tags.scanEvent(sugar.id)).assertIsDisplayed() // the newest scan is kept in view
-        compose.onNodeWithTag(Tags.scanUndo(bread.id)).performScrollTo().performClick()
+        val bread = vm.ui.value.scans.last()
+        compose.onNodeWithTag(Tags.scanUndo(bread.id)).performClick()
         compose.waitForIdle()
         assertFalse(ticked(AppFixture.BREAD), "bread unticked")
-        compose.onNodeWithTag(Tags.scanUndo(sugar.id)).performScrollTo().performClick()
+        scan(sugarB)
+        val sugar = vm.ui.value.scans.last()
+        compose.onNodeWithTag(Tags.scanEvent(sugar.id)).assertIsDisplayed()
+        compose.onNodeWithTag(Tags.scanUndo(sugar.id)).performClick()
         compose.waitForIdle()
         assertFalse(ticked(AppFixture.BREAD))
         assertFalse(ItemKey("sugar") in entries())
