@@ -1,7 +1,7 @@
 # Open Questions
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-22
+**Last updated:** 2026-10-26
 
 A live register, deliberately outside the spec tiers because it turns over as
 answers arrive. Answered items graduate into the decisions table in
@@ -88,6 +88,54 @@ Tiers to change: tier 2 (the modes, and F12's place in them), tier 3
 probably none — the oracles are about the list as presented, not which
 screen shows it — unless the shop view hides an action, which O3 would need
 to allow.
+
+### H9. Predictive suggestions from purchase cadence
+
+**Status:** proposed by the owner (2026-10-26) for consideration; not
+designed.
+
+Most of a list is the same staples coming round again: milk most trips,
+coffee every few weeks. The history already says when each item was last
+bought and how often, so the app could offer the ones that look due while
+the list is being written. A purchase is a tick that survives trip end
+(O33), at any store or none: cadence belongs to the household, not the
+shop, so unlike routing it is not per store.
+
+What the frozen spec already says about it:
+
+- **Suggest, never add** (T1, T4). An entry put on the list by inference is
+  the mirror of one moved off it by inference. A suggestion sits outside the
+  list until the user takes it, and taking it is an ordinary add. Ignoring
+  suggestions must cost nothing; a dismissal, if recorded at all, is a
+  further observation (T5).
+- **Cold start is silent** (T3). Nothing is suggested until an item has
+  enough purchases to have a cadence; one purchase is a hunch.
+- **The clock.** O19 keeps the clock out of the presentation, and recency is
+  counted in trips (tier 4). Cadence in trips is pure but rough: a weekly
+  shop and a top-up trip count the same. Cadence in days needs "now", which
+  observations already carry (wall-clock milliseconds, tier 4) but the
+  presentation may not use. Either suggestions sit outside the presentation
+  with today's date as an explicit input, so they stay a testable function,
+  or they are counted in trips. A decision either way.
+- **Not a pantry manager** (tier 1 §3). Cadence must stay a reading of
+  purchase history: no stock levels, no "how many left", no use-by dates.
+  The steering line probably needs a sentence saying where the boundary is.
+- **Typing already suggests items used before** (F1). Ranking those by how
+  due they are is the least intrusive first stage and needs no new screen.
+  A proactive "due" strip is a second stage, and belongs in the write view
+  if H8 happens.
+
+**Testable before it is built.** That staples recur regularly enough to
+predict is a `[hypothesis]`, but the field trial's history is the evidence:
+replay it and score how often an item flagged as due was in fact added
+within the next trip or two.
+
+Tiers to change: tier 1 (decisions on suggest-not-add and on the clock; the
+pantry steering line), tier 2 (F1's typing suggestions, and a new F-number
+for due items), tier 3 new oracles (e.g. a suggestion never changes the list
+by itself; with no purchase history nothing is suggested; ignoring every
+suggestion leaves the presentation as it would have been), and O19's scope
+if days are used.
 
 ---
 
