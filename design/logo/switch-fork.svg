@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="512" height="512">
+  <title>Optrolley: trolley problem, stop on the fork</title>
+  <!-- As switch.svg, with the first stop on the fork itself: the choice of route is made at an item. -->
+  <rect width="120" height="120" rx="28" fill="#0F6E56"/>
+  <path d="M50 72 C62 72 66 44 80 44 H108" fill="none" stroke="#5DCAA5" stroke-width="4" stroke-dasharray="5 5" stroke-linecap="round"/>
+  <path d="M10 72 H50 C62 72 66 92 80 92 H106" fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M8 30 H14 L17 38" fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M17 38 H46 L42 56 H21 Z" fill="#FFFFFF" stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round"/>
+  <circle cx="25" cy="65" r="5" fill="#FFFFFF"/>
+  <circle cx="38" cy="65" r="5" fill="#FFFFFF"/>
+  <circle cx="50" cy="72" r="6" fill="#FAC775"/>
+  <circle cx="85" cy="92" r="5.5" fill="#FAC775"/>
+  <circle cx="104" cy="92" r="7" fill="#FAC775"/>
+</svg>

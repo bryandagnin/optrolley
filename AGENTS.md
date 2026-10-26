@@ -98,6 +98,7 @@ spec/                     the tiers, in order
 spec/open-questions.md    live register, outside the tiers
 core/                     (planned) Kotlin/JVM: model, presentation, router, simulator
 app/                      (planned) Android: UI, storage, export
+design/logo/              candidate logos, as SVG sources
 docker/                   the build image: JDK + Android SDK
 compose.yaml              build and emulator services
 ```
