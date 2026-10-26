@@ -73,6 +73,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -84,6 +86,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.ScanEvent
 import dev.optrolley.autoroute.scan.Scanner
 import dev.optrolley.core.Barcode
@@ -164,7 +167,7 @@ fun ListScreen(
                 title = { StorePicker(state, onSelect = vm::select, onManage = { onOpen(Screen.STORES) }) },
                 actions = {
                     if (state.trip != null) {
-                        TextButton(onClick = vm::finishTrip, modifier = Modifier.testTag(Tags.FINISH_TRIP)) { Text("Done") }
+                        TextButton(onClick = vm::finishTrip, modifier = Modifier.testTag(Tags.FINISH_TRIP)) { Text(stringResource(R.string.done)) }
                     }
                     Overflow(onOpen, onExport, onImport)
                 },
@@ -202,7 +205,7 @@ fun ListScreen(
                 if (presentation.sections.all { it.entries.isEmpty() }) {
                     item("empty") {
                         Text(
-                            "Nothing on the list. Add something below.",
+                            stringResource(R.string.list_empty),
                             modifier = Modifier.fillMaxWidth().padding(32.dp).testTag(Tags.EMPTY_LIST),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -233,7 +236,7 @@ fun ListScreen(
 
     if (scanner != null && naming != null) {
         NamingDialog(
-            title = "New barcode",
+            title = stringResource(R.string.new_barcode),
             initial = "",
             state = state,
             onDismiss = vm::namingDismissed,
@@ -242,7 +245,7 @@ fun ListScreen(
     }
     changing?.let { event ->
         NamingDialog(
-            title = "What is this code?",
+            title = stringResource(R.string.what_is_this_code),
             initial = event.name,
             state = state,
             onDismiss = { changing = null },
@@ -286,30 +289,30 @@ private fun StorePicker(state: State, onSelect: (dev.optrolley.core.StoreId?) ->
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f, fill = false)) {
                 Text(
-                    if (selected == null) "Not in a store" else "Shopping at",
+                    stringResource(if (selected == null) R.string.not_in_a_store else R.string.shopping_at),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Text(
-                    selected?.name ?: "No store",
+                    selected?.name ?: stringResource(R.string.no_store),
                     style = MaterialTheme.typography.titleLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            Icon(Icons.Default.ArrowDropDown, contentDescription = "Change store")
+            Icon(Icons.Default.ArrowDropDown, contentDescription = stringResource(R.string.change_store))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.tagsAsResourceIds()) {
             if (state.trip != null) {
                 Text(
-                    "Changing store finishes this trip",
+                    stringResource(R.string.changing_store_finishes_trip),
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             DropdownMenuItem(
-                text = { Text("No store", fontWeight = if (selected == null) FontWeight.Bold else null) },
+                text = { Text(stringResource(R.string.no_store), fontWeight = if (selected == null) FontWeight.Bold else null) },
                 onClick = { open = false; onSelect(null) },
                 modifier = Modifier.testTag(Tags.STORE_OPTION_NONE),
             )
@@ -328,7 +331,7 @@ private fun StorePicker(state: State, onSelect: (dev.optrolley.core.StoreId?) ->
             }
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text(if (state.stores.isEmpty()) "Add a store…" else "Manage stores…") },
+                text = { Text(stringResource(if (state.stores.isEmpty()) R.string.add_a_store else R.string.manage_stores)) },
                 onClick = { open = false; onManage() },
                 modifier = Modifier.testTag(Tags.MANAGE_STORES),
             )
@@ -341,27 +344,27 @@ private fun Overflow(onOpen: (Screen) -> Unit, onExport: () -> Unit, onImport: (
     var open by remember { mutableStateOf(false) }
     Box {
         IconButton(onClick = { open = true }, modifier = Modifier.testTag(Tags.OVERFLOW)) {
-            Icon(Icons.Default.MoreVert, contentDescription = "More")
+            Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.more))
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, modifier = Modifier.tagsAsResourceIds()) {
             DropdownMenuItem(
-                text = { Text("Stores and chains") },
+                text = { Text(stringResource(R.string.stores_and_chains)) },
                 onClick = { open = false; onOpen(Screen.STORES) },
                 modifier = Modifier.testTag(Tags.MENU_STORES),
             )
             DropdownMenuItem(
-                text = { Text("Routing method and lab") },
+                text = { Text(stringResource(R.string.routing_method_and_lab)) },
                 onClick = { open = false; onOpen(Screen.ROUTING) },
                 modifier = Modifier.testTag(Tags.MENU_ROUTING),
             )
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Export history…") },
+                text = { Text(stringResource(R.string.export_history)) },
                 onClick = { open = false; onExport() },
                 modifier = Modifier.testTag(Tags.MENU_EXPORT),
             )
             DropdownMenuItem(
-                text = { Text("Import history…") },
+                text = { Text(stringResource(R.string.import_history)) },
                 onClick = { open = false; onImport() },
                 modifier = Modifier.testTag(Tags.MENU_IMPORT),
             )
@@ -381,23 +384,23 @@ private fun ElsewhereBanner(count: Int, onShow: () -> Unit) {
             Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(20.dp))
             Spacer(Modifier.width(12.dp))
             Text(
-                "$count ${if (count == 1) "item" else "items"} to get elsewhere",
+                pluralStringResource(R.plurals.elsewhere_banner, count, count),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.weight(1f),
             )
-            Text("Show", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.show), style = MaterialTheme.typography.labelLarge)
         }
     }
 }
 
 @Composable
 private fun SectionHeader(kind: SectionKind, count: Int, state: State) {
-    val storeName = state.selected?.let { state.stores[it]?.name } ?: "this store"
+    val storeName = state.selected?.let { state.stores[it]?.name } ?: stringResource(R.string.this_store)
     val (title, subtitle) = when (kind) {
-        SectionKind.UNPLACED -> "Unplaced" to "No known place at $storeName yet"
-        SectionKind.RUN -> "Run" to "In the order you walk $storeName"
-        SectionKind.ELSEWHERE -> "Elsewhere ($count)" to "Said not to be at $storeName"
-        SectionKind.LIST -> "List" to ""
+        SectionKind.UNPLACED -> stringResource(R.string.section_unplaced) to stringResource(R.string.section_unplaced_hint, storeName)
+        SectionKind.RUN -> stringResource(R.string.section_run) to stringResource(R.string.section_run_hint, storeName)
+        SectionKind.ELSEWHERE -> stringResource(R.string.section_elsewhere, count) to stringResource(R.string.section_elsewhere_hint, storeName)
+        SectionKind.LIST -> stringResource(R.string.section_list) to ""
     }
     val container = if (kind == SectionKind.ELSEWHERE) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.surfaceContainer
     Column(
@@ -447,17 +450,24 @@ private fun EntryRow(
         Confidence.TENTATIVE -> colors.outline
         null -> null
     }
+    val place = when (confidence) {
+        Confidence.SETTLED -> stringResource(R.string.place_settled)
+        Confidence.SETTLING -> stringResource(R.string.place_settling)
+        Confidence.TENTATIVE -> stringResource(R.string.place_tentative)
+        null -> null
+    }
+    val actions = stringResource(R.string.actions)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .background(background)
             .drawBehind { if (bar != null && confidence != null) drawConfidenceBar(confidence, bar) }
-            .semantics { if (confidence != null) stateDescription = "Place ${confidence.name.lowercase()}" }
+            .semantics { if (place != null) stateDescription = place }
             .heightIn(min = 64.dp)
             .combinedClickable(
                 onClick = { vm.setTicked(entry.item, !entry.ticked) },
                 onLongClick = { menu = true },
-                onLongClickLabel = "Actions",
+                onLongClickLabel = actions,
             )
             .testTag(Tags.entry(entry.item))
             .padding(start = 4.dp, end = 4.dp),
@@ -497,7 +507,7 @@ private fun EntryRow(
         }
         Box {
             IconButton(onClick = { menu = true }, modifier = Modifier.testTag(Tags.entryMenu(entry.item))) {
-                Icon(Icons.Default.MoreVert, contentDescription = "Actions for ${entry.name}")
+                Icon(Icons.Default.MoreVert, contentDescription = stringResource(R.string.actions_for, entry.name))
             }
             EntryMenu(
                 expanded = menu,
@@ -526,32 +536,32 @@ private fun EntryMenu(
     val chain = store?.chain?.let { state.chains[it] }
     DropdownMenu(expanded = expanded, onDismissRequest = onDismiss, modifier = Modifier.tagsAsResourceIds()) {
         DropdownMenuItem(
-            text = { Text("Edit") },
+            text = { Text(stringResource(R.string.edit)) },
             onClick = { onDismiss(); onEdit() },
             modifier = Modifier.testTag(Tags.actionEdit(entry.item)),
         )
         if (section == SectionKind.ELSEWHERE) {
             DropdownMenuItem(
-                text = { Text("Available here after all") },
+                text = { Text(stringResource(R.string.available_after_all)) },
                 onClick = { onDismiss(); vm.availableAfterAll(entry.item) },
                 modifier = Modifier.testTag(Tags.actionAvailable(entry.item)),
             )
         } else if (store == null) {
             DropdownMenuItem(
-                text = { Text("Not here (choose a store first)") },
+                text = { Text(stringResource(R.string.not_here_choose_store)) },
                 onClick = {},
                 enabled = false,
                 modifier = Modifier.testTag(Tags.actionNotHereStore(entry.item)),
             )
         } else {
             DropdownMenuItem(
-                text = { Text("Not at ${store.name}") },
+                text = { Text(stringResource(R.string.not_at_store, store.name)) },
                 onClick = { onDismiss(); vm.notHere(entry.item, Scope.STORE) },
                 modifier = Modifier.testTag(Tags.actionNotHereStore(entry.item)),
             )
             if (chain != null) {
                 DropdownMenuItem(
-                    text = { Text("Not at any ${chain.name}") },
+                    text = { Text(stringResource(R.string.not_at_chain, chain.name)) },
                     onClick = { onDismiss(); vm.notHere(entry.item, Scope.CHAIN) },
                     modifier = Modifier.testTag(Tags.actionNotHereChain(entry.item)),
                 )
@@ -559,7 +569,7 @@ private fun EntryMenu(
         }
         HorizontalDivider()
         DropdownMenuItem(
-            text = { Text("Remove", color = MaterialTheme.colorScheme.error) },
+            text = { Text(stringResource(R.string.remove), color = MaterialTheme.colorScheme.error) },
             onClick = { onDismiss(); vm.remove(entry.item) },
             modifier = Modifier.testTag(Tags.actionRemove(entry.item)),
         )
@@ -627,14 +637,14 @@ private fun BottomArea(
                         OutlinedTextField(
                             value = quantity,
                             onValueChange = { quantity = it },
-                            label = { Text("Quantity") },
+                            label = { Text(stringResource(R.string.quantity)) },
                             singleLine = true,
                             modifier = Modifier.weight(1f).testTag(Tags.ADD_QUANTITY),
                         )
                         OutlinedTextField(
                             value = note,
                             onValueChange = { note = it },
-                            label = { Text("Note") },
+                            label = { Text(stringResource(R.string.note)) },
                             singleLine = true,
                             modifier = Modifier.weight(2f).testTag(Tags.ADD_NOTE),
                         )
@@ -642,18 +652,18 @@ private fun BottomArea(
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconToggleButton(checked = details, onCheckedChange = { details = it }, modifier = Modifier.testTag(Tags.ADD_DETAILS)) {
-                        Icon(Icons.Default.Tune, contentDescription = "Quantity and note")
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.quantity_and_note))
                     }
                     OutlinedTextField(
                         value = text,
                         onValueChange = { text = it },
-                        placeholder = { Text("Add an item") },
+                        placeholder = { Text(stringResource(R.string.add_an_item)) },
                         trailingIcon = onScan?.let {
                             {
                                 IconToggleButton(checked = scanning, onCheckedChange = { _ -> it() }, modifier = Modifier.testTag(Tags.SCAN_BUTTON)) {
                                     Icon(
                                         Icons.Default.QrCodeScanner,
-                                        contentDescription = if (scanning) "Stop scanning" else "Scan barcodes",
+                                        contentDescription = stringResource(if (scanning) R.string.stop_scanning else R.string.scan_barcodes),
                                     )
                                 }
                             }
@@ -665,7 +675,7 @@ private fun BottomArea(
                     )
                     Spacer(Modifier.width(8.dp))
                     FilledIconButton(onClick = { submit() }, enabled = text.isNotBlank(), modifier = Modifier.testTag(Tags.ADD_BUTTON)) {
-                        Icon(Icons.Default.Add, contentDescription = "Add")
+                        Icon(Icons.Default.Add, contentDescription = stringResource(R.string.add))
                     }
                 }
             }
@@ -685,27 +695,27 @@ private fun EditDialog(entry: Entry, onDismiss: () -> Unit, onSave: (String, Str
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.tagsAsResourceIds(),
-        title = { Text("Edit") },
+        title = { Text(stringResource(R.string.edit)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.testTag(Tags.EDIT_NAME),
                 )
                 OutlinedTextField(
                     value = quantity,
                     onValueChange = { quantity = it },
-                    label = { Text("Quantity") },
+                    label = { Text(stringResource(R.string.quantity)) },
                     singleLine = true,
                     modifier = Modifier.testTag(Tags.EDIT_QUANTITY),
                 )
                 OutlinedTextField(
                     value = note,
                     onValueChange = { note = it },
-                    label = { Text("Note") },
+                    label = { Text(stringResource(R.string.note)) },
                     modifier = Modifier.testTag(Tags.EDIT_NOTE),
                 )
             }
@@ -715,10 +725,10 @@ private fun EditDialog(entry: Entry, onDismiss: () -> Unit, onSave: (String, Str
                 onClick = { onSave(name, quantity, note) },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.testTag(Tags.EDIT_SAVE),
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.EDIT_CANCEL)) { Text("Cancel") }
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.EDIT_CANCEL)) { Text(stringResource(R.string.cancel)) }
         },
     )
 }

@@ -40,10 +40,13 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
 import dev.optrolley.autoroute.ChainChoice
+import dev.optrolley.autoroute.R
 import dev.optrolley.core.Chain
 import dev.optrolley.core.State
 import dev.optrolley.core.Store
@@ -60,10 +63,10 @@ fun StoresScreen(state: State, snackbar: SnackbarHostState, vm: AppViewModel, on
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Stores and chains") },
+                title = { Text(stringResource(R.string.stores_and_chains)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag(Tags.BACK)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
             )
@@ -72,32 +75,32 @@ fun StoresScreen(state: State, snackbar: SnackbarHostState, vm: AppViewModel, on
             ExtendedFloatingActionButton(
                 onClick = { creating = true },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("Add store") },
+                text = { Text(stringResource(R.string.add_store)) },
                 modifier = Modifier.testTag(Tags.ADD_STORE),
             )
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
         LazyColumn(Modifier.padding(padding).fillMaxSize(), contentPadding = PaddingValues(bottom = 96.dp)) {
-            item { Heading("Stores") }
+            item { Heading(stringResource(R.string.stores)) }
             if (stores.isEmpty()) {
-                item { Hint("No stores yet. A store needs only a name; it learns its route as you shop.") }
+                item { Hint(stringResource(R.string.no_stores_hint)) }
             }
             items(stores, key = { "s:" + it.id.value }) { store ->
                 ListItem(
                     headlineContent = { Text(store.name) },
-                    supportingContent = { Text(store.chain?.let { state.chains[it]?.name } ?: "No chain") },
+                    supportingContent = { Text(store.chain?.let { state.chains[it]?.name } ?: stringResource(R.string.no_chain)) },
                     modifier = Modifier.clickable { editingStore = store }.testTag(Tags.store(store.id)),
                 )
             }
             if (chains.isNotEmpty()) {
                 item { HorizontalDivider(Modifier.padding(top = 8.dp)) }
-                item { Heading("Chains") }
+                item { Heading(stringResource(R.string.chains)) }
                 items(chains, key = { "c:" + it.id.value }) { chain ->
                     val count = state.stores.values.count { it.chain == chain.id }
                     ListItem(
                         headlineContent = { Text(chain.name) },
-                        supportingContent = { Text("$count ${if (count == 1) "store" else "stores"}") },
+                        supportingContent = { Text(pluralStringResource(R.plurals.store_count, count, count)) },
                         modifier = Modifier.clickable { editingChain = chain }.testTag(Tags.chain(chain.id)),
                     )
                 }
@@ -107,7 +110,7 @@ fun StoresScreen(state: State, snackbar: SnackbarHostState, vm: AppViewModel, on
 
     if (creating) {
         StoreDialog(
-            title = "New store",
+            title = stringResource(R.string.new_store),
             initial = null,
             state = state,
             onDismiss = { creating = false },
@@ -119,7 +122,7 @@ fun StoresScreen(state: State, snackbar: SnackbarHostState, vm: AppViewModel, on
     }
     editingStore?.let { store ->
         StoreDialog(
-            title = "Edit store",
+            title = stringResource(R.string.edit_store),
             initial = store,
             state = state,
             onDismiss = { editingStore = null },
@@ -189,23 +192,23 @@ private fun StoreDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth().testTag(Tags.STORE_NAME_FIELD),
                 )
                 Box {
                     OutlinedButton(onClick = { picking = true }, modifier = Modifier.fillMaxWidth().testTag(Tags.CHAIN_PICKER)) {
                         val label = when (val c = chain) {
-                            ChainChoice.None -> "Chain: none"
-                            is ChainChoice.Existing -> "Chain: ${state.chains[c.id]?.name ?: "?"}"
-                            is ChainChoice.New -> "Chain: new"
+                            ChainChoice.None -> stringResource(R.string.chain_none)
+                            is ChainChoice.Existing -> stringResource(R.string.chain_named, state.chains[c.id]?.name ?: "?")
+                            is ChainChoice.New -> stringResource(R.string.chain_new)
                         }
                         Text(label, modifier = Modifier.weight(1f))
                         Icon(Icons.Default.ArrowDropDown, contentDescription = null)
                     }
                     DropdownMenu(expanded = picking, onDismissRequest = { picking = false }, modifier = Modifier.tagsAsResourceIds()) {
                         DropdownMenuItem(
-                            text = { Text("No chain") },
+                            text = { Text(stringResource(R.string.no_chain)) },
                             onClick = { chain = ChainChoice.None; picking = false },
                             modifier = Modifier.testTag(Tags.CHAIN_OPTION_NONE),
                         )
@@ -217,7 +220,7 @@ private fun StoreDialog(
                             )
                         }
                         DropdownMenuItem(
-                            text = { Text("New chain…") },
+                            text = { Text(stringResource(R.string.new_chain)) },
                             onClick = { chain = ChainChoice.New(""); picking = false },
                             modifier = Modifier.testTag(Tags.CHAIN_OPTION_NEW),
                         )
@@ -227,7 +230,7 @@ private fun StoreDialog(
                     OutlinedTextField(
                         value = newChain,
                         onValueChange = { newChain = it },
-                        label = { Text("Chain name") },
+                        label = { Text(stringResource(R.string.chain_name)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth().testTag(Tags.NEW_CHAIN_FIELD),
                     )
@@ -236,11 +239,11 @@ private fun StoreDialog(
         },
         confirmButton = {
             TextButton(onClick = { onSave(name, choice) }, enabled = valid, modifier = Modifier.testTag(Tags.STORE_SAVE)) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.STORE_CANCEL)) { Text("Cancel") }
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.STORE_CANCEL)) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
@@ -251,23 +254,23 @@ private fun ChainDialog(chain: Chain, onDismiss: () -> Unit, onSave: (String) ->
     AlertDialog(
         onDismissRequest = onDismiss,
         modifier = Modifier.tagsAsResourceIds(),
-        title = { Text("Rename chain") },
+        title = { Text(stringResource(R.string.rename_chain)) },
         text = {
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
-                label = { Text("Name") },
+                label = { Text(stringResource(R.string.name)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag(Tags.CHAIN_NAME_FIELD),
             )
         },
         confirmButton = {
             TextButton(onClick = { onSave(name) }, enabled = name.isNotBlank(), modifier = Modifier.testTag(Tags.CHAIN_SAVE)) {
-                Text("Save")
+                Text(stringResource(R.string.save))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.CHAIN_CANCEL)) { Text("Cancel") }
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.CHAIN_CANCEL)) { Text(stringResource(R.string.cancel)) }
         },
     )
 }

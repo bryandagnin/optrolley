@@ -25,12 +25,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.scan.Scanner
 import java.io.IOException
 import java.time.LocalDate
@@ -53,7 +55,7 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
     val exporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/json")) { uri ->
         if (uri != null) {
             vm.exportTo { text ->
-                val out = resolver.openOutputStream(uri, "wt") ?: throw IOException("The file could not be opened")
+                val out = resolver.openOutputStream(uri, "wt") ?: throw IOException(context.getString(R.string.file_unopenable))
                 out.use { it.write(text.toByteArray(Charsets.UTF_8)) }
             }
         }
@@ -61,7 +63,7 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
     val importer = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             vm.importFrom {
-                val input = resolver.openInputStream(uri) ?: throw IOException("The file could not be opened")
+                val input = resolver.openInputStream(uri) ?: throw IOException(context.getString(R.string.file_unopenable))
                 input.use { String(it.readBytes(), Charsets.UTF_8) }
             }
         }
@@ -93,11 +95,12 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
     }
 
     val message = ui.message
+    val undo = stringResource(R.string.undo)
     LaunchedEffect(message) {
         if (message == null) return@LaunchedEffect
         val result = snackbar.showSnackbar(
             message.text,
-            actionLabel = if (message.undo != null) "Undo" else null,
+            actionLabel = if (message.undo != null) undo else null,
             duration = if (message.undo != null || message.text.length > 60) SnackbarDuration.Long else SnackbarDuration.Short,
         )
         vm.messageShown(message)
@@ -110,7 +113,7 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
         when {
             ui.fatal != null -> Box(Modifier.fillMaxSize().padding(24.dp), contentAlignment = Alignment.Center) {
                 Text(
-                    "The saved history could not be read, so nothing will be recorded until it is fixed.\n\n${ui.fatal}",
+                    stringResource(R.string.history_unreadable, ui.fatal.orEmpty()),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }

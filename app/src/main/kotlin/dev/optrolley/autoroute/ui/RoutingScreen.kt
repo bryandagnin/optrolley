@@ -28,10 +28,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.R
 import dev.optrolley.core.Routers
 import dev.optrolley.core.State
 import dev.optrolley.core.TripScore
@@ -53,10 +56,10 @@ fun RoutingScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Routing") },
+                title = { Text(stringResource(R.string.routing)) },
                 navigationIcon = {
                     IconButton(onClick = onBack, modifier = Modifier.testTag(Tags.BACK)) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
             )
@@ -67,10 +70,10 @@ fun RoutingScreen(
             Modifier.padding(padding).fillMaxSize(),
             contentPadding = PaddingValues(bottom = 24.dp),
         ) {
-            item { SectionTitle("Method") }
+            item { SectionTitle(stringResource(R.string.method)) }
             item {
                 Text(
-                    "A change applies from the next trip, so the list holds still while you shop.",
+                    stringResource(R.string.method_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -87,11 +90,10 @@ fun RoutingScreen(
                         .testTag(Tags.router(router.id)),
                 )
             }
-            item { SectionTitle("Lab") }
+            item { SectionTitle(stringResource(R.string.lab)) }
             item {
                 Text(
-                    "Each ended trip, scored against what each method would have shown from the trips before it. " +
-                        "Disorder is the share of item pairs it would have put the opposite way to how you walked. Lower is better.",
+                    stringResource(R.string.lab_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
@@ -136,13 +138,13 @@ private fun LabCard(
     Card(modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                if (chosen) "$label (in use)" else label,
+                if (chosen) stringResource(R.string.in_use, label) else label,
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(summary(scores), style = MaterialTheme.typography.bodyMedium)
             for ((store, trips) in scores.groupBy { it.store }.entries.sortedBy { storeName(it.key).lowercase() }) {
                 Text(
-                    "${storeName(store)}: ${summary(trips)}",
+                    stringResource(R.string.lab_store_summary, storeName(store), summary(trips)),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -151,11 +153,12 @@ private fun LabCard(
     }
 }
 
+@Composable
 private fun summary(scores: List<TripScore>): String {
-    if (scores.isEmpty()) return "No trips scored yet"
+    if (scores.isEmpty()) return stringResource(R.string.no_trips_scored)
     val pairs = scores.sumOf { it.pairs }
     val disorder = scores.sumOf { it.disorder }
     val percent = if (pairs == 0) "–" else String.format(Locale.ROOT, "%.1f%%", 100.0 * disorder / pairs)
-    val trips = scores.size
-    return "$trips ${if (trips == 1) "trip" else "trips"} · $pairs pairs · $disorder out of order · $percent"
+    val trips = pluralStringResource(R.plurals.trips, scores.size, scores.size)
+    return stringResource(R.string.lab_summary, trips, pairs, disorder, percent)
 }

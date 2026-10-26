@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Every word the screens show, so a build can swap the vocabulary without touching the UI code. -->
+<resources>
+    <!-- Shared -->
+    <string name="add">Add</string>
+    <string name="back">Back</string>
+    <string name="cancel">Cancel</string>
+    <string name="change">Change</string>
+    <string name="edit">Edit</string>
+    <string name="more">More</string>
+    <string name="name">Name</string>
+    <string name="note">Note</string>
+    <string name="quantity">Quantity</string>
+    <string name="save">Save</string>
+    <string name="undo">Undo</string>
+    <string name="no_chain">No chain</string>
+    <string name="stores_and_chains">Stores and chains</string>
+
+    <!-- The list -->
+    <string name="done">Done</string>
+    <string name="list_empty">Nothing on the list. Add something below.</string>
+    <string name="add_an_item">Add an item</string>
+    <string name="quantity_and_note">Quantity and note</string>
+    <string name="scan_barcodes">Scan barcodes</string>
+    <string name="stop_scanning">Stop scanning</string>
+    <string name="history_unreadable">The saved history could not be read, so nothing will be recorded until it is fixed.\n\n%1$s</string>
+    <string name="file_unopenable">The file could not be opened</string>
+
+    <!-- The store picker and menu -->
+    <string name="not_in_a_store">Not in a store</string>
+    <string name="shopping_at">Shopping at</string>
+    <string name="no_store">No store</string>
+    <string name="change_store">Change store</string>
+    <string name="changing_store_finishes_trip">Changing store finishes this trip</string>
+    <string name="add_a_store">Add a store…</string>
+    <string name="manage_stores">Manage stores…</string>
+    <string name="routing_method_and_lab">Routing method and lab</string>
+    <string name="export_history">Export history…</string>
+    <string name="import_history">Import history…</string>
+
+    <!-- Sections -->
+    <plurals name="elsewhere_banner">
+        <item quantity="one">%1$d item to get elsewhere</item>
+        <item quantity="other">%1$d items to get elsewhere</item>
+    </plurals>
+    <string name="show">Show</string>
+    <string name="this_store">this store</string>
+    <string name="section_unplaced">Unplaced</string>
+    <string name="section_unplaced_hint">No known place at %1$s yet</string>
+    <string name="section_run">Run</string>
+    <string name="section_run_hint">In the order you walk %1$s</string>
+    <string name="section_elsewhere">Elsewhere (%1$d)</string>
+    <string name="section_elsewhere_hint">Said not to be at %1$s</string>
+    <string name="section_list">List</string>
+    <string name="place_settled">Place settled</string>
+    <string name="place_settling">Place settling</string>
+    <string name="place_tentative">Place tentative</string>
+
+    <!-- An entry's actions -->
+    <string name="actions">Actions</string>
+    <string name="actions_for">Actions for %1$s</string>
+    <string name="available_after_all">Available here after all</string>
+    <string name="not_here_choose_store">Not here (choose a store first)</string>
+    <string name="not_at_store">Not at %1$s</string>
+    <string name="not_at_chain">Not at any %1$s</string>
+    <string name="remove">Remove</string>
+
+    <!-- Scanning -->
+    <string name="scan_mode_add">Add</string>
+    <string name="scan_mode_tick">Tick</string>
+    <string name="scan_event">%1$s %2$s</string>
+    <string name="scan_undone">undone</string>
+    <string name="scan_added_and_ticked">added and ticked</string>
+    <string name="scan_ticked">ticked</string>
+    <string name="scan_added">added</string>
+    <string name="scan_already_ticked">already ticked</string>
+    <string name="scan_already_on_list">already on the list</string>
+    <string name="new_barcode">New barcode</string>
+    <string name="what_is_this_code">What is this code?</string>
+    <string name="naming_hint">Name it as you would write it on the list. Brands that will do instead of each other can share one name.</string>
+
+    <!-- Routing method and lab -->
+    <string name="routing">Routing</string>
+    <string name="method">Method</string>
+    <string name="method_hint">A change applies from the next trip, so the list holds still while you shop.</string>
+    <string name="lab">Lab</string>
+    <string name="lab_hint">Each ended trip, scored against what each method would have shown from the trips before it. Disorder is the share of item pairs it would have put the opposite way to how you walked. Lower is better.</string>
+    <string name="in_use">%1$s (in use)</string>
+    <string name="no_trips_scored">No trips scored yet</string>
+    <plurals name="trips">
+        <item quantity="one">%1$d trip</item>
+        <item quantity="other">%1$d trips</item>
+    </plurals>
+    <string name="lab_summary">%1$s · %2$d pairs · %3$d out of order · %4$s</string>
+    <string name="lab_store_summary">%1$s: %2$s</string>
+
+    <!-- Stores and chains -->
+    <string name="add_store">Add store</string>
+    <string name="stores">Stores</string>
+    <string name="no_stores_hint">No stores yet. A store needs only a name; it learns its route as you shop.</string>
+    <string name="chains">Chains</string>
+    <plurals name="store_count">
+        <item quantity="one">%1$d store</item>
+        <item quantity="other">%1$d stores</item>
+    </plurals>
+    <string name="new_store">New store</string>
+    <string name="edit_store">Edit store</string>
+    <string name="chain_none">Chain: none</string>
+    <string name="chain_named">Chain: %1$s</string>
+    <string name="chain_new">Chain: new</string>
+    <string name="new_chain">New chain…</string>
+    <string name="chain_name">Chain name</string>
+    <string name="rename_chain">Rename chain</string>
+</resources>

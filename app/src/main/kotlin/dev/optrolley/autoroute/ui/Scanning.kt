@@ -37,6 +37,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -44,6 +45,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.ScanEvent
 import dev.optrolley.autoroute.scan.Scanner
 import dev.optrolley.core.Barcode
@@ -88,13 +90,13 @@ fun ScanModeSwitch(tick: Boolean, onTick: (Boolean) -> Unit, modifier: Modifier 
             onClick = { onTick(false) },
             shape = SegmentedButtonDefaults.itemShape(index = 0, count = 2),
             modifier = Modifier.testTag(Tags.SCAN_MODE_ADD),
-        ) { Text("Add") }
+        ) { Text(stringResource(R.string.scan_mode_add)) }
         SegmentedButton(
             selected = tick,
             onClick = { onTick(true) },
             shape = SegmentedButtonDefaults.itemShape(index = 1, count = 2),
             modifier = Modifier.testTag(Tags.SCAN_MODE_TICK),
-        ) { Text("Tick") }
+        ) { Text(stringResource(R.string.scan_mode_tick)) }
     }
 }
 
@@ -108,13 +110,13 @@ fun LastScan(event: ScanEvent, state: State, vm: AppViewModel, onChange: () -> U
         else -> false
     }
     val status = when {
-        event.ticked && !undoable -> "undone"
-        event.ticked && event.added -> "added and ticked"
-        event.ticked -> "ticked"
-        event.added && entry == null -> "undone"
-        event.added -> "added"
-        entry?.ticked == true -> "already ticked"
-        else -> "already on the list"
+        event.ticked && !undoable -> R.string.scan_undone
+        event.ticked && event.added -> R.string.scan_added_and_ticked
+        event.ticked -> R.string.scan_ticked
+        event.added && entry == null -> R.string.scan_undone
+        event.added -> R.string.scan_added
+        entry?.ticked == true -> R.string.scan_already_ticked
+        else -> R.string.scan_already_on_list
     }
     Row(
         Modifier.fillMaxWidth()
@@ -123,16 +125,16 @@ fun LastScan(event: ScanEvent, state: State, vm: AppViewModel, onChange: () -> U
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            "${event.name} $status",
+            stringResource(R.string.scan_event, event.name, stringResource(status)),
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(start = 8.dp),
         )
         if (undoable) {
-            TextButton(onClick = { vm.undoScan(event) }, modifier = Modifier.testTag(Tags.scanUndo(event.id))) { Text("Undo") }
+            TextButton(onClick = { vm.undoScan(event) }, modifier = Modifier.testTag(Tags.scanUndo(event.id))) { Text(stringResource(R.string.undo)) }
         }
-        TextButton(onClick = onChange, modifier = Modifier.testTag(Tags.scanChange(event.id))) { Text("Change") }
+        TextButton(onClick = onChange, modifier = Modifier.testTag(Tags.scanChange(event.id))) { Text(stringResource(R.string.change)) }
     }
 }
 
@@ -167,13 +169,13 @@ internal fun NamingDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    "Name it as you would write it on the list. Brands that will do instead of each other can share one name.",
+                    stringResource(R.string.naming_hint),
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.name)) },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
                     keyboardActions = KeyboardActions(onDone = { if (name.isNotBlank()) onSave(name) }),
@@ -197,10 +199,10 @@ internal fun NamingDialog(
                 onClick = { onSave(name) },
                 enabled = name.isNotBlank(),
                 modifier = Modifier.testTag(Tags.NAMING_SAVE),
-            ) { Text("Save") }
+            ) { Text(stringResource(R.string.save)) }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.NAMING_CANCEL)) { Text("Cancel") }
+            TextButton(onClick = onDismiss, modifier = Modifier.testTag(Tags.NAMING_CANCEL)) { Text(stringResource(R.string.cancel)) }
         },
     )
 }
