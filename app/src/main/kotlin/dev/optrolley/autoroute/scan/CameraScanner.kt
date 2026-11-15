@@ -7,6 +7,7 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -51,7 +52,16 @@ object CameraScanner : Scanner {
 
         LaunchedEffect(lifecycle) {
             val provider = ProcessCameraProvider.awaitInstance(context)
-            val preview = Preview.Builder().build().apply { setSurfaceProvider { surface = it } }
+            // The same shape as the frames analysed, so the middle of the
+            // viewfinder is the middle of what is read (BarcodeDecoder.ZONE).
+            val preview = Preview.Builder()
+                .setResolutionSelector(
+                    ResolutionSelector.Builder()
+                        .setAspectRatioStrategy(AspectRatioStrategy.RATIO_16_9_FALLBACK_AUTO_STRATEGY)
+                        .build(),
+                )
+                .build()
+                .apply { setSurfaceProvider { surface = it } }
             val analysis = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 // Enough pixels across an EAN-13's bars at arm's length, without
@@ -67,10 +77,13 @@ object CameraScanner : Scanner {
             val thread = Executors.newSingleThreadExecutor()
             val main = ContextCompat.getMainExecutor(context)
             val decoder = BarcodeDecoder()
-            val gate = ScanGate()
+            val gate = ScanGate(sightings = 2, steadyMs = 700, restMs = 1_000)
             analysis.setAnalyzer(thread) { frame ->
                 frame.use {
-                    if (!isActive) return@use
+                    if (!isActive) {
+                        gate.hold(SystemClock.elapsedRealtime())
+                        return@use
+                    }
                     val plane = it.planes[0]
                     val buffer = plane.buffer
                     val bytes = ByteArray(buffer.remaining()).also(buffer::get)

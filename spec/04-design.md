@@ -1,7 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-22
+**Last updated:** 2026-11-15
 
 ---
 
@@ -280,6 +280,14 @@ one-handed (T2).
   haptic buzz per accepted scan (`performHapticFeedback`, which needs no
   vibrate permission). A code is accepted again only after it has been out
   of view for 1.5 s, so one held under the camera adds once.
+- **Aimed, not glimpsed.** Only a square in the middle of the frame is read,
+  0.7 of its shorter side across, and the viewfinder outlines it: the next
+  pack along the shelf is in the picture but not in the square. A code is
+  accepted once two readings running agree, within 0.7 s of each other,
+  since a single frame can misread part of one code as another, shorter
+  one. After a scan nothing else is accepted for 1 s, while the phone
+  comes away. A code still in view when naming closes counts as never
+  having left.
 - **Tick mode:** a known code ticks its entry; one not on the list is added
   and ticked (O48); one already ticked records nothing (O49) — not a second
   `Ticked`, which would move its final tick and change what the trip

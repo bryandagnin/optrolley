@@ -91,4 +91,64 @@ class BarcodeDecoderTest {
         assertFalse(gate.accept(milk, 2_900), "seen 1.4 s ago, so still in view")
         assertTrue(gate.accept(milk, 4_500))
     }
+
+    /** [code] as an EAN-13 320 pixels wide, its left edge at [left], in a frame 1280 by 480. */
+    private fun wideFrame(code: String, left: Int): Frame {
+        val matrix = MultiFormatWriter().encode(code, BarcodeFormat.EAN_13, 320, 160)
+        val luma = ByteArray(1280 * 480) { 0xB0.toByte() }
+        for (y in 0 until matrix.height) for (x in 0 until matrix.width) {
+            luma[(160 + y) * 1280 + left + x] = if (matrix[x, y]) 0x10 else 0xF0.toByte()
+        }
+        return Frame(luma, 1280, 480, 1280)
+    }
+
+    @Test
+    fun `reads a code in the middle of the frame and not one off to the side`() {
+        val decoder = BarcodeDecoder()
+        assertEquals(Barcode("4006381333931"), decoder.read(wideFrame("4006381333931", left = 480)))
+        assertNull(decoder.read(wideFrame("4006381333931", left = 40)))
+        assertNull(decoder.read(wideFrame("4006381333931", left = 920)))
+    }
+
+    @Test
+    fun `a code is taken once it has been read twice running`() {
+        val gate = ScanGate(sightings = 2, steadyMs = 700)
+        val milk = Barcode("4006381333931")
+        val tea = Barcode("96385074")
+        assertFalse(gate.accept(milk, 0), "one reading may be a misreading")
+        assertFalse(gate.accept(tea, 100))
+        assertFalse(gate.accept(milk, 200), "tea came between")
+        assertFalse(gate.accept(milk, 1_000), "too long after the last reading to be the same look")
+        assertTrue(gate.accept(milk, 1_100))
+        assertFalse(gate.accept(milk, 1_200), "still in view")
+    }
+
+    @Test
+    fun `nothing else is taken just after a scan`() {
+        val gate = ScanGate(sightings = 2, steadyMs = 700, restMs = 1_000)
+        val milk = Barcode("4006381333931")
+        val tea = Barcode("96385074")
+        gate.accept(milk, 0)
+        assertTrue(gate.accept(milk, 100))
+        assertFalse(gate.accept(tea, 200))
+        assertFalse(gate.accept(tea, 300), "the phone is still coming away from the milk")
+        assertFalse(gate.accept(tea, 900))
+        assertTrue(gate.accept(tea, 1_150), "still aimed at once the rest is over")
+    }
+
+    @Test
+    fun `a code held in view through a pause is not taken again after it`() {
+        val gate = ScanGate(sightings = 2, steadyMs = 700, restMs = 1_000)
+        val milk = Barcode("4006381333931")
+        val tea = Barcode("96385074")
+        gate.accept(milk, 0)
+        assertTrue(gate.accept(milk, 100))
+        gate.hold(5_000)
+        gate.hold(9_000)
+        assertFalse(gate.accept(milk, 9_100))
+        assertFalse(gate.accept(milk, 9_200), "it never left")
+        assertFalse(gate.accept(tea, 9_300))
+        assertFalse(gate.accept(tea, 9_400), "resting after the pause")
+        assertTrue(gate.accept(tea, 10_050))
+    }
 }

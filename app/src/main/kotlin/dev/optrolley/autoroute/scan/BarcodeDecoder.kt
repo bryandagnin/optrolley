@@ -13,9 +13,12 @@ import dev.optrolley.core.Barcode
 
 /**
  * Reads a retail barcode from one camera frame's luminance plane, on the
- * device (tier 4 §7.1). Not thread-safe: one per analysis thread.
+ * device (tier 4 §7.1). Only the middle of the frame is read: a square
+ * [zone] of its shorter side across, which the viewfinder marks, so a code
+ * has to be aimed at and the shelf behind it is not scanned by accident.
+ * Not thread-safe: one per analysis thread.
  */
-class BarcodeDecoder {
+class BarcodeDecoder(private val zone: Float = ZONE) {
     private val reader = MultiFormatReader().apply {
         setHints(mapOf(DecodeHintType.POSSIBLE_FORMATS to FORMATS, DecodeHintType.TRY_HARDER to true))
     }
@@ -27,9 +30,10 @@ class BarcodeDecoder {
      * either way to it.
      */
     fun decode(luma: ByteArray, width: Int, height: Int, rowStride: Int = width): Barcode? {
-        val packed = if (rowStride == width) luma else pack(luma, width, height, rowStride)
-        return attempt(packed, width, height)
-            ?: attempt(rotate(packed, width, height), height, width)
+        val side = (minOf(width, height) * zone).toInt()
+        val square = crop(luma, rowStride, (width - side) / 2, (height - side) / 2, side)
+        return attempt(square, side, side)
+            ?: attempt(rotate(square, side, side), side, side)
     }
 
     private fun attempt(pixels: ByteArray, width: Int, height: Int): Barcode? {
@@ -46,6 +50,13 @@ class BarcodeDecoder {
     }
 
     companion object {
+        /**
+         * The share of the frame's shorter side that is read. Small enough
+         * that a neighbouring pack falls outside it, large enough that an
+         * EAN-13 filling it has several pixels to a bar.
+         */
+        const val ZONE = 0.7f
+
         /** Retail product codes only, so a QR code on a pack is not taken for the product. */
         val FORMATS = listOf(BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E)
 
@@ -60,6 +71,13 @@ class BarcodeDecoder {
         internal fun pack(luma: ByteArray, width: Int, height: Int, rowStride: Int): ByteArray {
             val out = ByteArray(width * height)
             for (y in 0 until height) System.arraycopy(luma, y * rowStride, out, y * width, width)
+            return out
+        }
+
+        /** The [side]-wide square whose corner is at ([left], [top]). */
+        internal fun crop(luma: ByteArray, rowStride: Int, left: Int, top: Int, side: Int): ByteArray {
+            val out = ByteArray(side * side)
+            for (y in 0 until side) System.arraycopy(luma, (top + y) * rowStride + left, out, y * side, side)
             return out
         }
 
@@ -79,12 +97,51 @@ class BarcodeDecoder {
  * Lets a code through once per sighting: a code still in view is not taken
  * again until it has been out of view for [quietMs], so a pack held under the
  * camera adds once.
+ *
+ * A code is taken only once it has been read [sightings] times running, each
+ * within [steadyMs] of the last: one frame's misreading of a code, or a
+ * glimpse of another in passing, is not a scan. After one is taken nothing
+ * else is for [restMs], which is the time it takes to lower the phone.
  */
-class ScanGate(private val quietMs: Long = 1_500) {
+class ScanGate(
+    private val quietMs: Long = 1_500,
+    private val sightings: Int = 1,
+    private val steadyMs: Long = 0,
+    private val restMs: Long = 0,
+) {
     private val lastSeen = HashMap<Barcode, Long>()
+    private var candidate: Barcode? = null
+    private var streak = 0
+    private var candidateAt = 0L
+    private var taken: Barcode? = null
+    private var restUntil = Long.MIN_VALUE
 
     fun accept(code: Barcode, now: Long): Boolean {
-        val previous = lastSeen.put(code, now)
-        return previous == null || now - previous > quietMs
+        val previous = lastSeen[code]
+        if (previous != null && now - previous <= quietMs) {
+            lastSeen[code] = now
+            candidate = null
+            return false
+        }
+        streak = if (code == candidate && now - candidateAt <= steadyMs) streak + 1 else 1
+        candidate = code
+        candidateAt = now
+        if (streak < sightings || now < restUntil) return false
+        lastSeen[code] = now
+        taken = code
+        restUntil = now + restMs
+        candidate = null
+        return true
+    }
+
+    /**
+     * Scanning is paused at [now], e.g. while the code just taken is being
+     * named. That code counts as still in view, so it is not taken a second
+     * time when scanning resumes with the pack where it was.
+     */
+    fun hold(now: Long) {
+        taken?.let { lastSeen[it] = now }
+        candidate = null
+        restUntil = maxOf(restUntil, now + restMs)
     }
 }

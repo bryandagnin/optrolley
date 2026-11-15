@@ -3,6 +3,7 @@ package dev.optrolley.autoroute.ui
 import android.os.Build
 import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -47,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
 import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.ScanEvent
+import dev.optrolley.autoroute.scan.BarcodeDecoder
 import dev.optrolley.autoroute.scan.Scanner
 import dev.optrolley.core.Barcode
 import dev.optrolley.core.ItemKey
@@ -55,7 +57,8 @@ import dev.optrolley.core.State
 /**
  * Scanning on the list itself (F12, D17): a small viewfinder in the corner,
  * just big enough to aim with, beside the add bar and never over an entry
- * (O3). Decoding pauses while [paused], e.g. while a code is being named.
+ * (O3). The square in its middle is where a code is read. Decoding pauses
+ * while [paused], e.g. while a code is being named.
  */
 @Composable
 fun Minimap(scanner: Scanner, paused: Boolean, tick: Boolean, vm: AppViewModel, modifier: Modifier = Modifier) {
@@ -77,6 +80,13 @@ fun Minimap(scanner: Scanner, paused: Boolean, tick: Boolean, vm: AppViewModel, 
                 vm.scanned(code, tick)
             },
             modifier = Modifier.fillMaxSize(),
+        )
+        // Where a code has to be to be read: the viewfinder is as wide as the
+        // frame's shorter side, so the zone is the same share of its width.
+        Box(
+            Modifier.align(Alignment.Center)
+                .size(104.dp * BarcodeDecoder.ZONE)
+                .border(2.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(8.dp)),
         )
     }
 }
