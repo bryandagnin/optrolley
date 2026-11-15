@@ -13,9 +13,10 @@ import dev.optrolley.core.Barcode
 
 /**
  * Reads a retail barcode from one camera frame's luminance plane, on the
- * device (tier 4 §7.1). Only the middle of the frame is read: a square
- * [zone] of its shorter side across, which the viewfinder marks, so a code
- * has to be aimed at and the shelf behind it is not scanned by accident.
+ * device (tier 4 §7.1). Only the middle of what the viewfinder shows is
+ * read: a square [zone] of its shorter side across, which the viewfinder
+ * marks, so a code has to be aimed at and the shelf behind it is not scanned
+ * by accident.
  * Not thread-safe: one per analysis thread.
  */
 class BarcodeDecoder(private val zone: Float = ZONE) {
@@ -27,11 +28,12 @@ class BarcodeDecoder(private val zone: Float = ZONE) {
      * [luma] holds [height] rows of [width] pixels, each row starting
      * [rowStride] bytes after the last. Tried as given and turned a quarter,
      * since a 1D code is read across its bars and the phone may be held
-     * either way to it.
+     * either way to it. [shown] is the part of the frame the viewfinder
+     * shows, the whole of it if not given.
      */
-    fun decode(luma: ByteArray, width: Int, height: Int, rowStride: Int = width): Barcode? {
-        val side = (minOf(width, height) * zone).toInt()
-        val square = crop(luma, rowStride, (width - side) / 2, (height - side) / 2, side)
+    fun decode(luma: ByteArray, width: Int, height: Int, rowStride: Int = width, shown: Shown = Shown(0, 0, width, height)): Barcode? {
+        val side = (minOf(shown.width, shown.height) * zone).toInt()
+        val square = crop(luma, rowStride, shown.left + (shown.width - side) / 2, shown.top + (shown.height - side) / 2, side)
         return attempt(square, side, side)
             ?: attempt(rotate(square, side, side), side, side)
     }
@@ -49,9 +51,12 @@ class BarcodeDecoder(private val zone: Float = ZONE) {
         }
     }
 
+    /** A rectangle of a frame, in its pixels. */
+    data class Shown(val left: Int, val top: Int, val width: Int, val height: Int)
+
     companion object {
         /**
-         * The share of the frame's shorter side that is read. Small enough
+         * The share of the viewfinder's shorter side that is read. Small enough
          * that a neighbouring pack falls outside it, large enough that an
          * EAN-13 filling it has several pixels to a bar.
          */

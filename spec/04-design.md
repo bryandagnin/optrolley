@@ -280,8 +280,10 @@ one-handed (T2).
   haptic buzz per accepted scan (`performHapticFeedback`, which needs no
   vibrate permission). A code is accepted again only after it has been out
   of view for 1.5 s, so one held under the camera adds once.
-- **Aimed, not glimpsed.** Only a square in the middle of the frame is read,
-  0.7 of its shorter side across, and the viewfinder outlines it: the next
+- **Aimed, not glimpsed.** The viewfinder is square, and the camera is
+  given that square as one crop for the picture and for decoding, so what
+  is shown is what can be read. Of it only the middle is read, a square 0.7
+  of its side across, and the viewfinder outlines it: the next
   pack along the shelf is in the picture but not in the square. A code is
   accepted once two readings running agree, within 0.7 s of each other,
   since a single frame can misread part of one code as another, shorter

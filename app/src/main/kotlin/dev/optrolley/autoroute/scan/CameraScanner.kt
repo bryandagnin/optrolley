@@ -1,12 +1,15 @@
 package dev.optrolley.autoroute.scan
 
 import android.os.SystemClock
+import android.util.Rational
 import android.util.Size
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.core.SurfaceRequest
+import androidx.camera.core.UseCaseGroup
+import androidx.camera.core.ViewPort
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
@@ -52,8 +55,9 @@ object CameraScanner : Scanner {
 
         LaunchedEffect(lifecycle) {
             val provider = ProcessCameraProvider.awaitInstance(context)
-            // The same shape as the frames analysed, so the middle of the
-            // viewfinder is the middle of what is read (BarcodeDecoder.ZONE).
+            // The same shape as the frames analysed, so that the viewfinder
+            // and the decoder agree on the square even where a viewfinder
+            // ignores the crop it is given.
             val preview = Preview.Builder()
                 .setResolutionSelector(
                     ResolutionSelector.Builder()
@@ -87,14 +91,23 @@ object CameraScanner : Scanner {
                     val plane = it.planes[0]
                     val buffer = plane.buffer
                     val bytes = ByteArray(buffer.remaining()).also(buffer::get)
-                    val code = decoder.decode(bytes, it.width, it.height, plane.rowStride) ?: return@use
+                    val crop = it.cropRect
+                    val shown = BarcodeDecoder.Shown(crop.left, crop.top, crop.width(), crop.height())
+                    val code = decoder.decode(bytes, it.width, it.height, plane.rowStride, shown) ?: return@use
                     if (gate.accept(code, SystemClock.elapsedRealtime())) {
                         main.execute { if (isActive) deliver(code) }
                     }
                 }
             }
             try {
-                provider.bindToLifecycle(lifecycle, CameraSelector.DEFAULT_BACK_CAMERA, preview, analysis)
+                // One square crop for both: each frame then says which part
+                // of it the viewfinder is showing.
+                val square = UseCaseGroup.Builder()
+                    .setViewPort(ViewPort.Builder(Rational(1, 1), preview.targetRotation).build())
+                    .addUseCase(preview)
+                    .addUseCase(analysis)
+                    .build()
+                provider.bindToLifecycle(lifecycle, CameraSelector.DEFAULT_BACK_CAMERA, square)
                 awaitCancellation()
             } finally {
                 provider.unbind(preview, analysis)

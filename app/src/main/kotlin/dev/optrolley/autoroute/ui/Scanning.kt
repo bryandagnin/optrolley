@@ -54,6 +54,9 @@ import dev.optrolley.core.Barcode
 import dev.optrolley.core.ItemKey
 import dev.optrolley.core.State
 
+/** Square, as the camera is asked to crop (CameraScanner): nothing shown is left unread at the sides. */
+private val MINIMAP = 120.dp
+
 /**
  * Scanning on the list itself (F12, D17): a small viewfinder in the corner,
  * just big enough to aim with, beside the add bar and never over an entry
@@ -65,7 +68,7 @@ fun Minimap(scanner: Scanner, paused: Boolean, tick: Boolean, vm: AppViewModel, 
     val view = LocalView.current
     Box(
         modifier
-            .size(width = 104.dp, height = 136.dp)
+            .size(MINIMAP)
             .clip(RoundedCornerShape(12.dp))
             .background(Color.Black)
             .testTag(Tags.SCAN_MINIMAP),
@@ -81,11 +84,10 @@ fun Minimap(scanner: Scanner, paused: Boolean, tick: Boolean, vm: AppViewModel, 
             },
             modifier = Modifier.fillMaxSize(),
         )
-        // Where a code has to be to be read: the viewfinder is as wide as the
-        // frame's shorter side, so the zone is the same share of its width.
+        // Where a code has to be to be read.
         Box(
             Modifier.align(Alignment.Center)
-                .size(104.dp * BarcodeDecoder.ZONE)
+                .size(MINIMAP * BarcodeDecoder.ZONE)
                 .border(2.dp, Color.White.copy(alpha = 0.85f), RoundedCornerShape(8.dp)),
         )
     }

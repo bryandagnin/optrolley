@@ -111,6 +111,16 @@ class BarcodeDecoderTest {
     }
 
     @Test
+    fun `the middle is the middle of what the viewfinder shows`() {
+        val decoder = BarcodeDecoder()
+        val left = wideFrame("4006381333931", left = 80)
+        val shown = BarcodeDecoder.Shown(0, 0, 480, 480)
+        assertEquals(Barcode("4006381333931"), decoder.decode(left.luma, 1280, 480, 1280, shown))
+        val middle = wideFrame("4006381333931", left = 480)
+        assertNull(decoder.decode(middle.luma, 1280, 480, 1280, shown))
+    }
+
+    @Test
     fun `a code is taken once it has been read twice running`() {
         val gate = ScanGate(sightings = 2, steadyMs = 700)
         val milk = Barcode("4006381333931")
