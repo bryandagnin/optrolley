@@ -32,7 +32,12 @@ android {
     testOptions {
         unitTests.isIncludeAndroidResources = true
     }
+
+    // The debug screen's benchmark histories (tier 4 §7.2); see :core:benchHistories.
+    sourceSets.getByName("debug").assets.srcDir(rootProject.file("core/build/bench-assets"))
 }
+
+tasks.matching { "Debug" in it.name && "Assets" in it.name }.configureEach { dependsOn(":core:benchHistories") }
 
 // O23 is about the manifest that ships, with every library's additions, so
 // ManifestTest reads the variant's merged one rather than the source file or

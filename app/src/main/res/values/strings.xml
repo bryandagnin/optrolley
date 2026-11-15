@@ -111,4 +111,11 @@
     <string name="new_chain">New chain…</string>
     <string name="chain_name">Chain name</string>
     <string name="rename_chain">Rename chain</string>
+
+    <!-- The debug screen: debug builds only -->
+    <string name="debug">Debug</string>
+    <string name="benchmark">Benchmark</string>
+    <string name="benchmark_hint">Times what the app works out after each action, on made-up histories from a few months of weekly shops to twenty years. Your own history is not touched. Takes a few minutes; keep the app open.</string>
+    <string name="benchmark_run">Run benchmark</string>
+    <string name="benchmark_no_histories">This build has no histories to time.</string>
 </resources>

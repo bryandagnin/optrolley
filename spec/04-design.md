@@ -327,6 +327,20 @@ that encodes its price, so each pack reads differently and a link to one
 never matches the next. Such codes still link, but only to that pack. This
 is left alone until the field trial shows whether it matters.
 
+### 7.2 The debug screen
+
+Tools for whoever is building the app, reached from the overflow menu in a
+debuggable build only; a release build does not offer it. It is no part of
+tier 2 and nothing on it reads or writes the user's history.
+
+- **Benchmark.** Times each derivation (settle, replay, presentation,
+  confidence per router, and the lab) on synthetic histories of 20 to 1040
+  weekly shops, to show when a long history would first be felt on the
+  phone in hand (H12). The histories come from the simulator at build time
+  and ship as assets of the debug build only. The same timing runs on a
+  desk as `ScaleTiming`, so the two can be compared. The lab is timed only
+  up to 260 trips: it grows with the square of the trips.
+
 ## 8. Internal predicates (tier 4 — NOT frozen)
 
 None yet. They arrive with the design: invariants of the stored model, bounds

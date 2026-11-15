@@ -72,6 +72,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -368,6 +369,14 @@ private fun Overflow(onOpen: (Screen) -> Unit, onExport: () -> Unit, onImport: (
                 onClick = { open = false; onImport() },
                 modifier = Modifier.testTag(Tags.MENU_IMPORT),
             )
+            if (LocalContext.current.isDebuggable()) {
+                HorizontalDivider()
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.debug)) },
+                    onClick = { open = false; onOpen(Screen.DEBUG) },
+                    modifier = Modifier.testTag(Tags.MENU_DEBUG),
+                )
+            }
         }
     }
 }

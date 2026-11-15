@@ -24,6 +24,9 @@ object Tags {
     const val MENU_ROUTING = "menu-routing"
     const val MENU_EXPORT = "menu-export"
     const val MENU_IMPORT = "menu-import"
+    const val MENU_DEBUG = "menu-debug"
+    const val DEBUG_BENCH_RUN = "debug-bench-run"
+    const val DEBUG_BENCH_OUT = "debug-bench-out"
 
     const val LIST = "list"
     const val EMPTY_LIST = "empty-list"
