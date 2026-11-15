@@ -139,30 +139,19 @@ if days are used.
 
 ### H10. Items, the trip record and the library
 
-**Status:** decided in tier 1 (T5, T6, D10, D14, D18–D21); tiers 2 to 6
-still describe what came before and are brought into line next, in order.
+**Status:** decided and specified in tiers 1 to 5; being built in the order of
+tier 4 §10.
 
-What tier 1 leaves open:
+Still open:
 
 - **Retiring an item.** After a split the old item is simply no longer
   added. Whether it needs hiding from typing suggestions and the library,
   or removing, is undecided.
-- **Which catalogue** the library looks codes up in. Open Food Facts is an
-  open one `[from memory — verify its coverage of local products before
-  designing]`.
-- **How long the journal is kept** (D19), and whether export carries it, the
-  trips, or both.
-- **The lab** scores every routing method on every trip and takes seconds
-  on the phone after a few years of trips `[evidence: debug benchmark on the
-  owner's phone, 2026-11-15: 7.4 s at 260 trips]`. Scoring as trips end, or
-  only recent trips, would fix it.
-- **Existing histories.** The owner's phone holds a history in the old
-  form, to be carried over once and not lost.
-
-Tiers to change: tier 2 (F1 editing a name, F9 export, F12, a new F-number
-for the library), tier 3 (the item-match definition, section D on the
-record, O23 and O46 on permissions, new oracles for renaming, unlinking and
-lookups that fail), tier 4 (storage, the network), tier 5.
+- **Whether the catalogue knows local products.** Tier 4 §7.3 names Open
+  Food Facts, unchecked; if its coverage is poor the library still works,
+  showing numbers.
+- **How long the journal is kept** (D19). It can be cut from the front at
+  any time; nothing yet decides when.
 
 ---
 

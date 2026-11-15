@@ -25,26 +25,27 @@ turns out to be wrong, say so explicitly and get agreement before changing it.
 
 | Tier | File | State |
 |------|------|-------|
-| 1. Rationale, tenets, steering | `spec/01-rationale.md` | **ahead of the rest**: T5, T6, D10, D18–D21 revised by the owner |
-| 2. Functional spec | `spec/02-functional.md` | accepted for the first build |
-| 3. Predicates & oracles | `spec/03-oracles.md` | **frozen** |
-| 4. Low-level design / plan | `spec/04-design.md` | design — first build |
+| 1. Rationale, tenets, steering | `spec/01-rationale.md` | accepted; revised for the second build |
+| 2. Functional spec | `spec/02-functional.md` | accepted; revised for the second build |
+| 3. Predicates & oracles | `spec/03-oracles.md` | **frozen**, as restated for the second build |
+| 4. Low-level design / plan | `spec/04-design.md` | design — second build |
 | 5. Test plan | `spec/05-tests.md` | in force |
-| 6. Implementation | `core/`, `app/` | first build |
+| 6. Implementation | `core/`, `app/` | **first build: behind the spec** |
 
-**Tier 1 is ahead of tiers 2 to 6.** The owner changed what an item is, what
-the record is and what the network may be used for (open questions H10).
-Tiers 2 to 6 and the code still describe the earlier answers. They are
-brought into line in order, each agreed before the next; until a tier has
-been, what it says stands for that tier and below.
+**The code is behind the spec.** The owner changed what an item is, what
+the record is and what the network may be used for. Tiers 1 to 5 describe
+the second build; the code is still the first, which replays everything
+from the action log and knows an item by its name. Tier 4 §10 is the order
+the second is built in, and says which step the code has reached.
 
 Open and deferred questions sit outside the tiers in
 [`spec/open-questions.md`](./spec/open-questions.md). Answered ones graduate
 into the tier 1 decisions table.
 
-**The next step is the field trial**, not more code. Its findings may send
-changes back up the tiers; tier 1 was drafted from a one-line brief and
-accepted as drafted, so expect it to be corrected by real use.
+**The field trial is under way** on the owner's phone, alongside the second
+build. Its findings may send changes back up the tiers; tier 1 was drafted
+from a one-line brief, so expect it to be corrected by real use, as it has
+been once.
 
 **Frozen means frozen.** The oracle tests (`core/src/test/.../oracles/`) and
 the simulator (`.../sim/`) were written blind and judge the implementation

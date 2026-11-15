@@ -5,10 +5,12 @@
 
 ---
 
-## Status: DESIGN — first build
+## Status: DESIGN — second build
 
-Tier 3 is frozen, so the design can be filled in. Sections 4–7 describe the
-first build; the router is still chosen by data (§5), not here.
+The first build is in the owner's hands. §4, §7 and §7.3 describe the
+second, which follows tier 1's revised T5, T6 and D10; §10 is its build
+order. Until its steps land, the code is the first build: everything is
+replayed from the action log. The router is still chosen by data (§5).
 
 ---
 
@@ -16,15 +18,15 @@ first build; the router is still chosen by data (§5), not here.
 
 **Kotlin, native Android, two Gradle modules:**
 
-- `:core` — plain Kotlin/JVM, no Android dependency. The observation model,
-  the presentation function, the router, the simulator.
+- `:core` — plain Kotlin/JVM, no Android dependency. Actions, state and the
+  record, the presentation function, the router, the simulator.
 - `:app` — Android. UI (Jetpack Compose), storage, export, the barcode
   scanner, and later location.
 
 What drives the split:
 
 - **Every tier 3 oracle in sections A–E is a statement about a pure
-  function** of list, history and store selection (O19 says so outright). That
+  function** of state and record (O19 says so outright). That
   function can live entirely in `:core` and be tested without a device.
 - **Nothing Android is installed** — `java`, `gradle`, `adb`, `sdkmanager` and
   `kotlinc` are absent from `PATH`, and `JAVA_HOME` / `ANDROID_HOME` are unset
@@ -125,22 +127,32 @@ docker/        the build image (§2)
 compose.yaml   build and emulator services (§2)
 ```
 
-## 4. Observations and the presentation
+## 4. Actions, state, the record and the presentation
 
-**The record** is `List<Observation>` (`core/…/Observation.kt`): added,
-edited, removed, ticked, unticked, not-here and its undoing, store and chain
-creation and renaming, selection, trip ended, router chosen. Each carries
-wall-clock milliseconds, used only for tie groups and idleness; order is list
-position.
+**An action** is one thing the user did (`Observation`): added, edited,
+removed, ticked, unticked, not-here and its undoing, store and chain
+creation and renaming, selection, trip ended, router chosen, code linked
+and unlinked, item renamed. Each carries wall-clock milliseconds, used only
+for tie groups and idleness.
 
-**Everything else is a fold** (`replay`): the list, stores, chains, the trip
-in progress, each store's ended trips as tie-grouped `TripOrder`s, known
-names, and the router in force.
+**State** (`State`) is what the app holds now: the list, the items, stores
+and chains, code links, standing "not here" statements, the selected store,
+the trip in progress with its ticks, and the routing method. **The record**
+(`Record`) is each store's ended trips as tie-grouped `TripOrder`s, with
+when each ended. Both are plain values and both are stored (§7).
 
-**The clock never reaches the presentation.** Before recording an action,
-the app calls `settle(history, now)`, which appends a `TripEnded(IDLE)` if the
-trip has idled out. So whether a trip is in progress is itself in the
-history, and `present(history)` is a pure function (O19).
+**One step.** `apply(state, record, action)` gives the next state and, when
+the action ends a trip, the trip to append to the record. Nothing else
+changes either. `replay(actions)` is that step folded from empty, and
+`present(actions)` and the rest still take a list of actions: tests and the
+simulator build their cases that way, and an old install is carried over by
+it (O62). The app itself never folds more than the few actions a crash left
+unapplied.
+
+**The clock never reaches the presentation.** Before applying an action,
+the app calls `settle`, which applies a `TripEnded(IDLE)` first if the trip
+has idled out. So whether a trip is in progress is itself state, and
+`present(state, record)` is a pure function (O19).
 
 **Why the list holds still (O7–O9, O28–O30) mostly by construction.** The run
 is computed from ended trips only, and a router orders *items*, not entries:
@@ -151,8 +163,46 @@ are handled explicitly: a mid-trip "not here" moves its entry at once (the
 user's own act); a purchase that withdraws "not here" and a change of router
 both wait for the trip to end.
 
-**The export is the history** (`Export`), as JSON. Importing it is replaying
-it, so O22 is O21 by another route.
+### 4.1 Items
+
+**An item has an id and a name** (D10). The id is the name it was first
+given, trimmed and case-folded, with `~2`, `~3`… added if that id is taken.
+It never changes. Being derived, not drawn at random, it keeps `apply` a
+function (O19), and every action recorded by the first build, which named
+items by exactly that key, already carries the right id: nothing in an old
+history needs rewriting (O62).
+
+- **Adding by name** finds the item whose *current name* matches (tier 3's
+  item match), or makes a new one. So after "milk" is renamed "whole milk",
+  typing "milk" makes a new item `milk~2` with nothing learned (O56).
+- **Renaming** (`ItemRenamed`, and `Edited` with a new name) changes the name
+  and nothing else. Trips, "not here" statements and code links refer to the
+  id, so all follow (O55).
+- **Joining.** Renaming onto another item's name makes the renamed item an
+  alias of that one. Aliases are state. The record is not rewritten (O20):
+  wherever a trip is read, each id is first resolved through the aliases,
+  and an item that then appears twice in a trip is taken at its later tick,
+  as a tick redone is (O31). Statements and links held by the alias are
+  moved to the survivor, and two entries become one by the rule in O57.
+- **Unlinking** (`CodeUnlinked`) removes the code's link. The item is
+  untouched (O58).
+
+### 4.2 Learning at trip end (D18)
+
+A router orders every item placed at a store, from that store's trips
+alone. That order can only change when a trip ends there, when the routing
+method changes, or when items are joined. So it is kept per store
+(`Learned`), recomputed at those three moments, and a tick or an add only
+filters it to the list.
+
+Confidence reads the presented run against the store's last few witnessing
+trips, so it changes when the Run's membership does, not on a tick; it is
+kept for the trip and recomputed when an entry enters or leaves the Run.
+The lab's score for a trip is settled when the trip ends, from the trips
+before it, and kept; it is recomputed only after a join or a rebuild.
+
+`Learned` is a cache of the record and nothing more: dropping it and
+recomputing gives the same presentation (O21), which is how it is tested.
 
 ## 5. The router — chosen by oracle, not by argument
 
@@ -176,8 +226,8 @@ Candidates to try:
 
 Per O19, recency is counted in trips, never in wall-clock time.
 
-**All three ship in the first build (D12, F11).** `Routers` lists them; an
-observation chooses one. `score` replays the history and, for each ended
+**All three ship (D12, F11).** `Routers` lists them; an action chooses
+one. `score` takes, for each ended
 trip, asks each router what it would have presented from the trips before —
 the lab view, and the way real data chooses the winner. A trivial baseline,
 `FirstSeen`, stays in the list as the bar to clear.
@@ -228,11 +278,27 @@ the thing it judges will share its blind spots.
 
 ## 7. The app
 
-- **Storage.** The history as an append-only file of JSON lines in app
-  storage, flushed to disk before an action is shown as done. Not SQLite:
-  the record is a sequence that is only ever appended and replayed, and a
-  file is the simplest thing that does that; the derived state is rebuilt in
-  memory at start (a few thousand events replay in milliseconds).
+- **Storage.** Three files in app storage, written in this order for each
+  action, each flushed before the next:
+  1. **The journal** (`history.jsonl`, the first build's file): the action
+     appended as a line of JSON (D19).
+  2. **The record** (`trips.jsonl`): if the action ended a trip at a store,
+     that trip appended.
+  3. **State** (`state.json`): rewritten whole, beside itself and renamed
+     into place. It holds the count of actions and of trips it reflects.
+
+  On start the state and the record are read; the journal is not. If the
+  app died between writes, the counts say so, and the actions the state
+  lacks are applied from the journal's tail before anything is shown; a
+  trip the record has and the state does not know of is told apart by its
+  count and not appended twice. With no state file there is either nothing,
+  or a first-build install, which is carried over by folding its journal
+  once (O62). The journal can be cut from the front at any time: its lines
+  are numbered from the count where it begins.
+
+  Not SQLite: three small files with one writer, and the only crash to
+  recover from is "the last action is in the journal and not yet in the
+  state", which the counts settle.
 - **UI.** One screen is the product: the list in its sections, the store
   selector always visible, tick and not-here within thumb reach, the
   Elsewhere count announced. Secondary screens: stores and chains, the router
@@ -241,26 +307,28 @@ the thing it judges will share its blind spots.
   resume, so a trip interrupted by the app being killed ends when the user
   next acts after the timeout.
 - **Export and import** through the system file picker, which needs no
-  storage permission. Import only into an empty history.
-- **The camera permission and nothing else** (D15, O46); never a network
-  permission (O23). The camera is declared as an optional feature, so a
-  phone without one can still install the app.
+  storage permission. Import only into an empty install. The file is
+  version 2: state, record and journal together. A version 1 file, which is
+  a journal alone, is imported by folding it (O62).
+- **The camera and internet permissions and nothing else** (D15, O23). The
+  camera is declared as an optional feature, so a phone without one can
+  still install the app. The manifest test fails on any other permission a
+  library brings.
 - **Store detection (F10).** Staged as in open questions H1; not in the first
   build.
 
 ### 7.1 Scanning (F12)
 
-**The record.** `CodeLinked(code, name)` links a code to the item `name`
-matches; a later link for the same code replaces it (O43). A scan that adds
-records an ordinary `Added` carrying the `code` it read, so a scan *is* a
-typed name to everything downstream (O41) and the exact product stays in the
-history for later use (D14). `code` is left out of the file when absent, so
-a typed add is written exactly as before and the export stays version 1.
-Files with scans in them cannot be read by a build from before scanning.
+**Actions.** `CodeLinked(code, name)` links a code to the item `name`
+matches; a later link for the same code replaces it, and `CodeUnlinked`
+removes it (O43, O58). A scan that adds is an ordinary `Added` carrying the
+`code` it read, so a scan *is* a typed name to everything downstream (O41),
+and the journal keeps which product it was (D14).
 
-**Derived.** `State.codes` maps each code to its latest item. `nameFor(code)`
-gives that item's latest spelling from `known`, so a scan adds what typing
-the current name would. A link alone changes nothing on the list (O44).
+**State.** `State.codes` maps each code to its item's id, so a link follows
+its item through a rename (O55). `nameFor(code)` gives that item's current
+name, so a scan adds what typing the name would. A link alone changes
+nothing on the list (O44).
 
 **Where it lives (D17).** On the list screen. The scan button in the add bar
 turns on a small viewfinder in the bottom corner, beside the add bar and
@@ -310,12 +378,13 @@ product. UPC-A is written in its EAN-13 form (a leading zero), so a pack reads
 the same whichever reader matched it. Each frame is closed as soon as it is
 decoded; nothing from the camera is written anywhere (O47). Not ML Kit: its
 bundled model is offline, but the library brings telemetry and network
-permissions with it, which O23 forbids `[from memory — not checked against
+permissions with it, which O23 forbade when this was chosen `[from memory — not checked against
 a build]`. Not CameraX's `camera-view` either: it pulls in `camera-video`
 and media3, whose manifest declares `ACCESS_NETWORK_STATE` [evidence: the
 merged manifest, 2026-10-19]. The viewfinder is `camera-compose` on
 `camera-lifecycle`, and the manifest test catches any library that brings
-a permission back.
+a permission back. With the internet permission now held for the library
+(§7.3), ML Kit and `camera-view` could be had; neither is needed.
 
 **Permission just in time.** `CAMERA` is requested when the scan button is
 first pressed. If it is refused, the scanner does not open, a message says
@@ -341,12 +410,48 @@ tier 2 and nothing on it reads or writes the user's history.
   desk as `ScaleTiming`, so the two can be compared. The lab is timed only
   up to 260 trips: it grows with the square of the trips.
 
+### 7.3 The item library (F13)
+
+A screen from the overflow menu: every item by name, each with its codes.
+An item with no codes and no entry is still listed; it is what typing
+suggests.
+
+- **Rename** opens the same field as an entry's name and records
+  `ItemRenamed`. Renaming onto a name in use says what will be joined and
+  asks once, since it cannot be undone by renaming back.
+- **Unlink**, on a code, records `CodeUnlinked`, with undo while the screen
+  is open (a `CodeLinked` back to the same item).
+- **Product name and picture.** A `Catalogue` answers a code with a name and
+  a small picture, or nothing. The real one asks Open Food Facts for that
+  one product by its number, over HTTPS, with the platform's own
+  `HttpURLConnection` and no library `[from memory — the endpoint, the
+  fields asked for and its coverage of local products are checked when it
+  is built]`. The request carries the code and an agent string naming the
+  app; no account, no cookie, nothing about the user (O61).
+- **The catalogue's answers are a cache** in the app's cache directory, by
+  code: the answer, or that there was none, and when. Android may clear it;
+  so may the user. It is not state, not in the export (O47), and nothing
+  reads it but this screen (O60). A code is asked about when the library
+  shows it and the cache has no answer, never from the list or the scanner.
+  No connection is the same as no answer, tried again another day.
+
 ## 8. Internal predicates (tier 4 — NOT frozen)
 
-None yet. They arrive with the design: invariants of the stored model, bounds
-on update cost, the cycle-breaking rule.
+- **P1 — One step is the fold.** For any actions, applying them one at a
+  time from empty gives the same state and record as `replay` of them all.
+- **P2 — Stored is applied.** Whatever point the three files were last
+  written at, loading them gives the state and record of the actions the
+  journal holds: no action lost that was shown as done, none applied twice.
+- **P3 — An action does not cost the past.** The time to apply a tick, an
+  add or an edit and present the result does not grow with the number of
+  trips on record: measured on the benchmark's 52-trip and 1040-trip
+  histories, the longer takes no more than twice the shorter.
+- **P4 — Aliases are flat.** Every alias points at an item that is not
+  itself an alias, and no trip, link, statement or entry in the state names
+  an alias.
+- **P5 — Ids are stable.** No action changes the id of an item that exists.
 
-## 9. Build order
+## 9. Build order — first build
 
 0. **Confirm tiers 1–2; freeze tier 3.**
 1. Toolchain stage A. Gradle wrapper and `:core`, with one deliberately
@@ -362,3 +467,21 @@ on update cost, the cycle-breaking rule.
 9. **Field trial**: real trips in real shops, testing the tier 1 §5
    assumptions. Expect this to send changes back up the tiers.
 10. Store detection.
+
+## 10. Build order — second build
+
+Each step ends with the whole suite run; the oracle tests the first build
+passed keep passing throughout, unless tier 3 restated them.
+
+1. **The step function.** `apply`, `Record`, state that can be stored, with
+   `replay` and `present` as the fold of it (P1). No behaviour changes.
+2. **Items.** Ids, renaming, joining and unlinking, behind signatures
+   written first, so that the oracle tests for O55–O58 can be written from
+   tier 3 by an agent that has not seen the code, and seen to fail.
+3. **Storage.** The three files, recovery and carrying a first-build install
+   over (P2, O59, O62). Export version 2, import of both.
+4. **Learning at trip end** (P3), then the benchmark on the owner's phone
+   again.
+5. **Renaming from the list**, and the library screen without look-ups.
+6. **Look-ups**: the catalogue, its cache, the internet permission and the
+   restated manifest test (O23, O60, O61).
