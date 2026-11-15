@@ -1,7 +1,7 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-22
+**Last updated:** 2026-11-15
 
 ---
 
@@ -16,7 +16,7 @@ as the user sees it. How it does it belongs to tier 4.
 
 | Term | Meaning |
 |------|---------|
-| **Item** | A thing the user buys, as they named it. Remembered across lists. |
+| **Item** | A thing the user buys, with the name they gave it. Remembered across lists. Its name can be corrected without changing anything else about it (D10). |
 | **Entry** | An item's presence on the current list, with an optional quantity and note. |
 | **Store** | One physical shop. |
 | **Chain** | A named group of stores under one brand. A store belongs to at most one. |
@@ -25,18 +25,26 @@ as the user sees it. How it does it belongs to tier 4.
 | **Run** | The entries with a learned position in the selected store, in that order. |
 | **Unplaced** | Entries with no learned position in the selected store. |
 | **Elsewhere** | Entries the user has said cannot be got at the selected store. |
-| **Observation** | A recorded user action. The raw material of everything learned. |
+| **Record** | The trips that have ended, each kept as it was walked: its store, when, and what was ticked in what order. The raw material of everything learned (T5). |
+| **Journal** | Every action as it was made, kept for the field trial and for export. The app does not need it to work (D19). |
 | **Code** | A barcode the user has scanned. **Linked** once the user has said which item it means. |
+| **Library** | Every item and the codes linked to it (F13). |
 
 ## 2. The list (F1)
 
 - One list. Add an entry by typing a name, or by scanning a code (F12);
   optionally a quantity and a note.
 - Typing suggests items used before.
-- An entry can be edited, removed, ticked and unticked.
+- An entry can be removed, ticked and unticked, and its quantity and note
+  changed.
 - Adding a name that matches an existing item reuses that item, so what was
   learned about it carries over. Names match ignoring case and surrounding
   whitespace (D10).
+- **Changing an entry's name renames its item**, here and everywhere: it is a
+  correction, and what was learned stays with the item. If the new name is
+  another item's, the two become one item, with what was learned of both;
+  if both were on the list, one entry is left. To have two items where
+  there was one, add new ones.
 - Adding a name already on the list does not add it twice; it shows the entry
   that is there.
 
@@ -119,9 +127,13 @@ from the user. Old evidence gives way to new.
 
 ## 10. Export and import (F9)
 
-- The user can export everything — list, items, stores, and the full
-  observation history — to a file, and import it on a fresh install.
+- The user can export everything — the list, items, stores, code links,
+  the record of trips and the journal — to a file, and import it on a fresh
+  install.
 - This is the backup and the migration path. There is no other, by T6.
+- A file exported by a build from before trips were the record can still be
+  imported, and an install from before then keeps everything across the
+  update.
 
 ## 11. Routing method (F11) — first build only
 
@@ -130,8 +142,8 @@ from the user. Old evidence gives way to new.
 - A lab view scores every method against each trip already walked: how many
   pairs it would have presented out of the walked order, using only the
   trips before. This is how real data picks the method.
-- The choice is recorded like any other action, so the presentation stays a
-  function of the history.
+- The choice is part of the app's state, so the presentation stays a
+  function of that state and the record.
 
 Once a method is chosen, the setting and the losing methods go.
 
@@ -156,8 +168,8 @@ tapped.
   for an item already on the list adds nothing twice; it says the entry is
   there (F1).
 - **Many codes can mean one item.** Which item a code means is the user's
-  choice. It can be changed at any later scan, and the latest link is what
-  the code means.
+  choice. It can be changed at any later scan, or undone in the library
+  (F13), and the latest link is what the code means.
 - **Names are where substitutes live.** If any brand of sugar will do, every
   sugar's code is linked to "sugar"; a preferred brand goes in the entry's
   note. The app never decides that two items are alike.
@@ -169,9 +181,27 @@ tapped.
   and tapping stays the way to tick for anyone who never scans.
 - The camera is asked for at the first scan, and only then. Without it,
   everything else works. No image is kept.
-- Links are part of the record: they survive export and import (F9).
+- Links survive export and import (F9).
 
-## 13. Store detection (F10) — later
+## 13. The item library (F13)
+
+Where items and codes are looked after, at home. Nothing in it is needed to
+shop.
+
+- **Every item is listed**, with the codes linked to it, whether or not it
+  is on the list.
+- **An item can be renamed** there, as from its entry (F1).
+- **A code can be unlinked** from its item. It is then a code never seen:
+  its next scan asks for a name (F12).
+- **Each code shows its product's name and a small picture**, to tell apart
+  codes that share an item. They are looked up by the code's number when
+  there is a connection, and kept on the phone. The look-up sends the
+  number and nothing else. With no connection, or no answer, the code shows
+  its number, and nothing else in the app is any different.
+- A product's name is never used as an item's name, and is never shown on
+  the list (D14).
+
+## 14. Store detection (F10) — later
 
 - With location permission, the app suggests the nearest known store when
   opened.
@@ -181,7 +211,7 @@ tapped.
 
 Not part of the first build. Staging is in open questions H1.
 
-## 14. Out of scope for this tier
+## 15. Out of scope for this tier
 
 Everything tier 1 §3 excludes, plus: multiple lists (D9), shared lists (H4),
 manual drag-to-reorder as a teaching signal (H5), and any presentation of
