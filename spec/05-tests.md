@@ -1,7 +1,7 @@
 # Tier 5 — Test Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-22
+**Last updated:** 2026-11-15
 
 ---
 
@@ -40,7 +40,7 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 
 | Oracles | Kind | Shape of the test |
 |---------|------|-------------------|
-| O1, O2 | property | Any list, any history, any store: the presented entries are a permutation of the list, and identical in content across stores. |
+| O1, O2 | property | Any list, any actions, any store: the presented entries are a permutation of the list, and identical in content across stores. |
 | O3, O4 | instrumented | Act on entries in each section; Elsewhere count visible. |
 | O5, O6 | unit + property | Only explicit statements populate Elsewhere; a tick clears it. |
 | O7–O9 | property | Any sequence of ticks, unticks and additions within a trip preserves relative order of untouched entries. |
@@ -52,15 +52,31 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 | O16 | property | Add arbitrary history at another store; presentation unchanged. |
 | O17 | unit + property | Old order, then K trips of a new one. |
 | O18 | simulation | Disorder curve against the paper-order baseline and the frozen thresholds. |
-| O19 | property | Same inputs twice, and after a shuffled rebuild: same output. |
-| O20–O22 | unit + property | History only grows; rebuild and export/import round-trip to identical presentations. |
-| O23 | build check | Inspect the built package's declared permissions. |
-| O24 | instrumented | Tier 2 walkthrough with radios off. |
+| O19 | property | Same inputs twice, and after a shuffled rebuild: same output. Also with the journal emptied and with a catalogue that answers anything. |
+| O20–O22 | unit + property | No action changes a trip already on record; dropping what was learned and rebuilding from the record, and export then import, give identical presentations and confidence. |
+| O59 | unit + property | Any actions applied, the journal emptied, then more actions: every presentation as with the journal kept. |
+| O62 | unit, on fixtures | A first-build journal alone, opened by this build, and a version 1 export imported: list, every store's presentation and every code as the first build gave them. The fixtures are files the first build wrote. |
+| O23 | build check | The merged manifest requests `CAMERA` and `INTERNET` and nothing else. |
+| O24 | instrumented | Tier 2 walkthrough with radios off; the library shows numbers. |
+| O60 | unit + property | The same actions with a catalogue that answers, one that fails and one that never returns: identical state, record and presentations. |
+| O61 | unit | A recording stand-in for the network: every request the app makes is for one code's number and carries nothing else of the user's. |
+| O55–O58 | unit + property | Rename an item anywhere in a generated sequence of actions: every presentation and confidence unchanged, its codes still add it; the old name then starts cold. Join two items: trips, statements and codes of both count, the entries merge by the rule. Unlink: the code is as never linked, nothing else differs. Written from tier 3 before the code, by an agent that has not seen it. |
 | O41–O45 | unit + property | A scan of a linked code against typing the name; links inserted anywhere move nothing; links survive rebuild and export. Also at the view model, scanning against typing over the same history. |
-| O46 | build check + instrumented | The merged manifest requests `CAMERA` and nothing else. With the camera refused, the scanner does not open and the list still works. |
+| O46 | instrumented | With the camera refused, the scanner does not open and the list still works. |
 | O47 | unit | The export of a history with scans holds only the decoded codes. |
 | O48, O49 | unit + property | A scan to tick against a tap (and against typing then tapping, for an item not on the list), through to what the ended trip teaches; a second scan of a ticked item records nothing. Also at the view model. |
 | O50–O54 | unit + property | Confidence against a reference written from tier 3 §I alone, edge cases at each threshold, the same run under two routers, stability within a trip, and the move scenario under every router. |
+
+**Tier 4's predicates** (not frozen) are tested beside the code: P1 and P4–P5
+as properties over generated actions; P2 by cutting the three files off
+after every write of a sequence and loading what is left; P3 by the
+benchmark's histories, as a ratio so it does not depend on the machine.
+
+**Oracle tests the first build passed stay as they are**, since a list of
+actions still builds any case. The exceptions are the ones tier 3
+restated: the manifest check (O23), and any that took an entry's new name
+to mean a different item (now O55–O57). Each such change is listed for the
+owner before it is made.
 
 **Decoding without a camera.** The decoder is tested on barcodes rendered by
 ZXing's own encoder, upright and rotated, so the frame-to-code path is
