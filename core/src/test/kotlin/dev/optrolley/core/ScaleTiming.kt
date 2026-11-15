@@ -6,7 +6,7 @@ import kotlin.test.Test
 
 /**
  * How long each thing the app does per action takes as the history grows
- * (H12). A measurement, not a test: it asserts nothing, runs only when
+ * (H10). A measurement, not a test: it asserts nothing, runs only when
  * asked (`OPTROLLEY_TIMING=1`), and writes `build/timing.txt`. Times are
  * this machine's; the app's debug screen takes the same on a phone.
  */

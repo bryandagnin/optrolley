@@ -12,7 +12,7 @@ internal val BENCH_TRIPS = listOf(20, 52, 130, 260, 520, 1040)
 internal const val BENCH_LAB_UP_TO = 260
 
 /**
- * A synthetic history to time against (H12): a weekly supermarket shop for
+ * A synthetic history to time against (H10): a weekly supermarket shop for
  * [trips] weeks with every kind of noise, then a list written and a trip
  * begun, as the app is mostly found.
  */

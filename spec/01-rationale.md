@@ -1,7 +1,7 @@
 # Tier 1 — Rationale, Core Tenets, Steering
 
 **Date:** 2026-10-09
-**Last updated:** 2026-10-22
+**Last updated:** 2026-11-15
 
 ---
 
@@ -12,7 +12,8 @@ with self-optimising auto-routing") and two answers about scope. The owner
 accepted it as drafted by going ahead with the build (2026-10-18); the field
 trial is where it gets tested. §4 marks which decisions were stated, which
 were inferred, and which were accepted that way. Barcode scanning (D14–D15)
-was asked for by the owner ahead of the trial and revises §3.
+was asked for by the owner ahead of the trial and revises §3. T5, T6, D10
+and D18–D21 are the owner's direction after the first weeks of use.
 
 ---
 
@@ -86,20 +87,31 @@ and are never required.
 *Why:* setup tax is what killed the sort-by-aisle approach. An optimiser that
 needs feeding is a second chore.
 
-### T5. Observations are the record; the model is derived
+### T5. Trips are the record; the model is derived
 
-What the user did — added, ticked, said "not here" — is appended to a log and
-never rewritten. What the app believes about a shop's layout is computed from
-that log and can be thrown away and rebuilt at any time.
+Each trip, once ended, is kept as it was walked: which shop, what was ticked
+and in what order. Trips are appended and never rewritten. What the app
+believes about a shop's layout is computed from them and can be thrown away
+and rebuilt at any time.
+
+Everything else the app holds, the list, the items and their names, the
+stores, which code means which item, is its current state. It is kept as
+what it is now and changed in place.
 
 *Why:* the routing method will change; the history of real trips is the
 irreplaceable part. A better method should improve old shops retroactively,
-and a rebuildable model is one that can be tested by replay.
+and a rebuildable model is one that can be tested by replaying trips. The
+rest is not evidence of anything, and treating it as a log to be replayed
+made a name impossible to correct and every action slower than the last.
 
-### T6. On the device, offline, private
+### T6. Works with no connection
 
-No account, no server. Everything works with no signal, because supermarkets
-are where signal is worst. What you buy, and where you are, stay on the phone.
+No account, and no server of its own. Everything done in a shop works with
+no signal, because supermarkets are where signal is worst. A connection may
+be used at home for a convenience, and when it is missing or fails nothing
+else is any different.
+
+The list and the trips are never sent anywhere.
 
 *Why:* a list that needs a connection fails in exactly the place it is used.
 
@@ -112,6 +124,9 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
   model would be more optimal and is forbidden.
 - **T3 over cleverness.** An item never bought in this shop has no known
   position. It is shown as such, not slotted in on a hunch.
+- **T6 over the library.** Looking a code up needs the network (D20), so it
+  is never in the way of adding, ticking or scanning: those finish whether
+  or not an answer ever comes.
 
 ## 3. Steering: what this is not
 
@@ -121,9 +136,13 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
 - **Not a price tool.** No prices, no comparison, no offers.
 - **Not a pantry or recipe manager.**
 - **Not shared**, for now. One person, one phone (H4).
-- **Not a product database.** Items are whatever the user named. No
-  catalogue lookup, no product names from anywhere but the user. A barcode is
-  only the user's own shortcut to a name they chose (D14).
+- **Not a product database.** Items are whatever the user named, and the
+  list shows only those names. A barcode is the user's own shortcut to a
+  name they chose (D14). A product's catalogue name and picture appear in
+  the item library alone, to tell one code from another (D20).
+- **Not growing much further.** The item library closes out barcodes. Beyond
+  the ideas already in the open-questions register, no sizable feature is
+  planned.
 
 ## 4. Decisions
 
@@ -133,18 +152,22 @@ are where signal is worst. What you buy, and where you are, stay on the phone.
 | D2 | "Auto-routing" is the in-shop order of the list, learned from tick-off order. | inferred; accepted |
 | D3 | The app is store-aware: routes are per shop, and availability is per shop or chain. | stated |
 | D4 | The current shop is chosen by hand first. Automatic detection (e.g. geofence) is a later convenience and may only ever *supply* that same choice. | stated |
-| D5 | Single user, single device, no server. | accepted |
+| D5 | Single user, single device, no account and no server of its own. | accepted |
 | D6 | Native Android in Kotlin; routing logic in a module with no Android dependency. Reasoning and counter-case in tier 4 §1. | accepted |
 | D7 | Planning a trip across several shops is out of scope for now. | accepted |
 | D8 | Unplaced entries are shown ahead of the run (was Q2). | accepted |
 | D9 | One list (was Q4). | accepted |
-| D10 | Names match ignoring case and surrounding whitespace, nothing cleverer; "trim milk" is not "milk" (was Q5). | accepted |
+| D10 | An item is a thing of its own with a name, as a store is; it is not its name. A typed name finds its item by matching ignoring case and surrounding whitespace, nothing cleverer: "trim milk" is not "milk" (was Q5). Renaming an item corrects its name and keeps everything learned about it. Renaming onto a name already in use joins the two items. Splitting one item into several is done by making new items, which start with nothing learned. A name no item has any more, typed again, is a new item. | stated |
 | D11 | A rearrangement is absorbed within 3 trips (was Q3; values in tier 3). | accepted |
 | D12 | The first build ships every candidate routing method, selectable, and scores each against real trips. Choosing one waits for real data. | stated |
 | D13 | Application id `dev.optrolley.autoroute`, display name "Optrolley", minimum Android 10 (API 29) (was Q6). | accepted |
-| D14 | Camera barcode scanning adds items, and in the shop can tick them, as a shortcut to the user's own names (was H7). With no network there is no catalogue, so a code's first scan asks for a name. Many codes may share one name, and the name chosen is the level at which the user will take a substitute ("sugar" covers every brand of sugar). Item identity stays the name (D10), and routing learns by name. Each scan records the code it read, so per-product use stays derivable later (T5). | stated |
-| D15 | The app may hold the camera permission. It is asked for at the first scan, never required, and no image is kept. It never holds a network permission (T6). | stated |
+| D14 | Camera barcode scanning adds items, and in the shop can tick them, as a shortcut to the user's own names (was H7). A code's first scan asks for a name; no catalogue's name is ever used for an item. Many codes may mean one item, and the name chosen is the level at which the user will take a substitute ("sugar" covers every brand of sugar). Routing learns by item (D10), not by code. The code a scan read is kept with what the scan did, so per-product use stays derivable later. | stated |
+| D15 | The app may hold the camera permission. It is asked for at the first scan, never required, and no image from the camera is kept. It may use the network for the library's lookups and nothing else (D20, T6). | stated |
 | D16 | Each Run entry shows a confidence level, one rule for every routing method: how well its presented place agrees with the user's last few walks of that store. It can fall as well as rise, so a moved item is not shown as settled. | stated |
+| D18 | Learning is redone when a trip ends, not at each action: the list holds still during a trip (T2), so nothing learned can change what is shown until then. An action costs the same however many trips there have been. | stated |
+| D19 | Every action is also written to a journal, as it was before trips were the record: to study how the app is really used during the field trial (§5), and for export. The app does not read it to run. It may be cut short or dropped once the trial has answered its questions. | accepted |
+| D20 | An item library, used at home: every item with the codes that mean it. There an item is renamed (D10) and a code is unlinked from its item, after which it is a code never seen. Each code shows its product's name and a small picture, looked up by its number when there is a connection and kept on the phone. A lookup sends the code and nothing else. Without one the library works the same and shows the number. | stated |
+| D21 | The trips kept are all of them. No trip is dropped for being old unless measurement on the phone shows it is needed; a rarely bought item is placed by old trips alone. | accepted |
 | D17 | Scanning happens inline on the list, with a small corner viewfinder the user turns on, not on a screen of its own. | stated |
 
 ## 5. Assumptions not yet tested

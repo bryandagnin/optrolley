@@ -336,7 +336,7 @@ tier 2 and nothing on it reads or writes the user's history.
 - **Benchmark.** Times each derivation (settle, replay, presentation,
   confidence per router, and the lab) on synthetic histories of 20 to 1040
   weekly shops, to show when a long history would first be felt on the
-  phone in hand (H12). The histories come from the simulator at build time
+  phone in hand (H10). The histories come from the simulator at build time
   and ship as assets of the debug build only. The same timing runs on a
   desk as `ScaleTiming`, so the two can be compared. The lab is timed only
   up to 260 trips: it grows with the square of the trips.

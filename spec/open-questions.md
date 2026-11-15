@@ -137,125 +137,32 @@ by itself; with no purchase history nothing is suggested; ignoring every
 suggestion leaves the presentation as it would have been), and O19's scope
 if days are used.
 
-### H10. Renaming an item without losing what was learned
+### H10. Items, the trip record and the library
 
-**Status:** proposed by the owner (2026-11-15), who has answered the first
-questions; not designed.
+**Status:** decided in tier 1 (T5, T6, D10, D14, D18–D21); tiers 2 to 6
+still describe what came before and are brought into line next, in order.
 
-An item is its name (D10), and the record refers to items by that name. So
-correcting a mis-named entry makes it a different item: the route learned
-under the old name stays there, and codes linked to the old name still add
-the old name.
+What tier 1 leaves open:
 
-**Direction: items get an id, and the name becomes a label**, as stores
-already work (F2). A rename changes the label and nothing else; routes,
-"not here" statements and code links follow the id. Where the ids live is
-H12's question.
+- **Retiring an item.** After a split the old item is simply no longer
+  added. Whether it needs hiding from typing suggestions and the library,
+  or removing, is undecided.
+- **Which catalogue** the library looks codes up in. Open Food Facts is an
+  open one `[from memory — verify its coverage of local products before
+  designing]`.
+- **How long the journal is kept** (D19), and whether export carries it, the
+  trips, or both.
+- **The lab** scores every routing method on every trip and takes seconds
+  on the phone after a few years of trips `[evidence: debug benchmark on the
+  owner's phone, 2026-11-15: 7.4 s at 260 trips]`. Scoring as trips end, or
+  only recent trips, would fix it.
+- **Existing histories.** The owner's phone holds a history in the old
+  form, to be carried over once and not lost.
 
-What the owner has settled:
-
-- **A rename is a correction, never a different thing.** Nobody renames
-  milk to eggs, so the app does not ask which was meant (T4).
-- **Splitting or joining items is done with new items**, not by
-  reinterpreting what was learned: "milk" becomes "full-cream milk" and
-  "trim milk", each starting cold. Whether the old item then needs
-  retiring, or simply stops being added, is open; if it matters anywhere it
-  is in typing suggestions and the library (H11).
-- **Renaming onto a name already in use joins the two**, and that is
-  acceptable: like products usually sit together. Where a shop keeps one
-  apart (the organic maple syrup far from the rest), it stays an item of
-  its own under its own name.
-- **The old name, typed again later, is a new item** with nothing learned.
-  This follows from ids and needs no rule of its own.
-
-Still open: how a typed name finds its item once names are labels (exact
-match on the current label, as D10 does now, is the obvious answer), and
-how existing histories, which name items by key, are read.
-
-Tiers to change: tier 1 D10 and D14 (what identity is), tier 2 F1 (editing a
-name), tier 3 the item-match definition and new oracles (e.g. a rename
-leaves every section and order as it was at every store, as O38 says of
-stores; after a rename a linked code adds the new name).
-
-### H11. A library of items and their barcodes
-
-**Status:** proposed by the owner (2026-11-15); not designed.
-
-A view of every item with the codes linked to it, used at home, not in the
-shop. Most of what it shows is already derived from the history (D14): each
-code, its item, and how often each was scanned.
-
-- **A code can be unlinked from its item** there, without scanning the pack
-  again. After that it is an unknown code (O42). Parked earlier as a
-  possible O55.
-- **Each code shows the product's name and a thumbnail**, looked up by its
-  number. This is the one place a product name helps: to tell apart several
-  codes that share the user's name. The list itself never shows it, since
-  the user's name is the item and is the level at which they take a
-  substitute (D14).
-
-**The lookup needs the network, and the owner has said what T6 is for:
-reliability, not privacy.** The app must never need a connection to do its
-job in the shop. That is weaker than what tiers 1 and 3 say now ("offline,
-private"; O23, no network permission), so both need restating before this
-is designed. What should survive the restating:
-
-- **Nothing in the shop waits on the network.** The list, routing, ticking
-  and scanning work with no connection, exactly as now.
-- **A lookup that fails or never happens changes nothing** but the missing
-  name and picture.
-- **Fetched names and pictures are a cache, not the record.** They can be
-  thrown away and fetched again, and are not in the export (O47 as it
-  stands).
-- **Which catalogue** is undecided. Open Food Facts is an open one
-  `[from memory — verify its coverage of local products before designing]`.
-  A lookup tells that service which codes the household scans; the owner
-  accepts that.
-
-Tiers to change: tier 1 T6 and D15 (what the network may be used for),
-tier 2 (a new F-number), tier 3 O23 restated, an oracle for unlinking, and
-oracles for the points above. The manifest test that enforces O23 changes
-with it.
-
-### H12. Keeping the current state, and a data horizon
-
-**Status:** proposed by the owner (2026-11-15); not designed.
-
-Every action today replays the whole history and recomputes the
-presentation and confidence from it. That is what T5 asks for in its
-plainest form, and its cost grows with the history for as long as the app
-is used.
-
-**Keep the derived state as well as the log.** The current state (the
-list, stores, items and their ids, code links, what each router has
-learned) is saved alongside the history with the position in the history
-it reflects. Opening the app loads it and replays only what came after;
-each action updates both. T5 holds as long as the saved state is a cache:
-it can be deleted and rebuilt from the history, and a test rebuilds it and
-compares (O21).
-
-**A horizon** is a point beyond which observations are no longer consulted.
-Routing looks back only a few trips (D11; confidence reads the last three
-witnesses), so most of an old history is already inert. Two strengths:
-
-- **A horizon on reading.** The log is kept whole and exported whole; only
-  the saved state and the recent tail are read. Nothing in tiers 1 to 3
-  changes.
-- **A horizon on keeping.** Observations older than it are dropped and the
-  saved state becomes the start of the record. T5, O20, O21 and O22 would
-  need restating, and the export would have to carry the saved state.
-
-What a horizon must not lose: that an item was ever placed at a store
-(tier 3, "placement is never lost"), and whatever H9 needs of purchase
-dates.
-
-**Measure before building.** The simulator can write a history several
-years long; timing it would show whether the cost is in the replay or in
-the routers, and at what length it is first felt on the phone.
-
-Tiers to change: tier 4 (storage) for the saved state and a reading
-horizon; tier 1 T5 and tier 3 section on the record as well for a keeping
-horizon.
+Tiers to change: tier 2 (F1 editing a name, F9 export, F12, a new F-number
+for the library), tier 3 (the item-match definition, section D on the
+record, O23 and O46 on permissions, new oracles for renaming, unlinking and
+lookups that fail), tier 4 (storage, the network), tier 5.
 
 ---
 

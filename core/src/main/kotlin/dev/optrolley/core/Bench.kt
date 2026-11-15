@@ -5,7 +5,7 @@ import java.util.Locale
 /**
  * How long each derivation takes on one history, in milliseconds. One action
  * in the app costs a settle and a replay, then a replay, a presentation and
- * a confidence (H12). [present] and [confidence] are by router id; [lab] is
+ * a confidence (H10). [present] and [confidence] are by router id; [lab] is
  * null where it was not timed.
  */
 data class BenchRow(

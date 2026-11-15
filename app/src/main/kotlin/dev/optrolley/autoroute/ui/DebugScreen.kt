@@ -76,7 +76,7 @@ fun DebugScreen(onBack: () -> Unit) {
 /**
  * Times each derivation on synthetic histories of growing length, shipped
  * with debug builds, to see when a long history would first be felt on this
- * phone (H12). Each line is also logged, to be read over adb.
+ * phone (H10). Each line is also logged, to be read over adb.
  */
 @Composable
 private fun Benchmark() {

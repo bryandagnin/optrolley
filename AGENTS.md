@@ -25,12 +25,18 @@ turns out to be wrong, say so explicitly and get agreement before changing it.
 
 | Tier | File | State |
 |------|------|-------|
-| 1. Rationale, tenets, steering | `spec/01-rationale.md` | accepted for the first build |
+| 1. Rationale, tenets, steering | `spec/01-rationale.md` | **ahead of the rest**: T5, T6, D10, D18–D21 revised by the owner |
 | 2. Functional spec | `spec/02-functional.md` | accepted for the first build |
 | 3. Predicates & oracles | `spec/03-oracles.md` | **frozen** |
 | 4. Low-level design / plan | `spec/04-design.md` | design — first build |
 | 5. Test plan | `spec/05-tests.md` | in force |
 | 6. Implementation | `core/`, `app/` | first build |
+
+**Tier 1 is ahead of tiers 2 to 6.** The owner changed what an item is, what
+the record is and what the network may be used for (open questions H10).
+Tiers 2 to 6 and the code still describe the earlier answers. They are
+brought into line in order, each agreed before the next; until a tier has
+been, what it says stands for that tier and below.
 
 Open and deferred questions sit outside the tiers in
 [`spec/open-questions.md`](./spec/open-questions.md). Answered ones graduate
@@ -73,11 +79,13 @@ have read that file. Ordered; the lower number wins a conflict.
    slotted in on a hunch.
 4. **Learning is passive.** Never ask the user for an aisle, a category or a
    layout. Never make a correction mandatory.
-5. **Observations are the record; the model is derived.** User actions are
-   appended and never rewritten. Anything learned must be rebuildable from
-   that history alone.
-6. **On the device, offline, private.** No account, no server, no network
-   permission.
+5. **Trips are the record; the model is derived.** Ended trips are appended
+   and never rewritten. Anything learned must be rebuildable from them
+   alone. The list, items, stores and code links are current state, changed
+   in place.
+6. **Works with no connection.** No account, no server of its own. Nothing
+   done in a shop needs the network; it is used only for the item library's
+   lookups at home. The list and the trips are never sent anywhere.
 
 ## Things to know before designing
 
