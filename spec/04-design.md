@@ -141,9 +141,10 @@ the trip in progress with its ticks, and the routing method. **The record**
 (`Record`) is each store's ended trips as tie-grouped `TripOrder`s, with
 when each ended. Both are plain values and both are stored (§7).
 
-**One step.** `apply(state, record, action)` gives the next state and, when
-the action ends a trip, the trip to append to the record. Nothing else
-changes either. `replay(actions)` is that step folded from empty, and
+**One step.** A `Fold` holds the state and the record and takes one action
+at a time; an action that ends a trip at a store appends that trip to the
+record, and nothing else changes it. `replay(actions)` is that step from
+empty, and
 `present(actions)` and the rest still take a list of actions: tests and the
 simulator build their cases that way, and an old install is carried over by
 it (O62). The app itself never folds more than the few actions a crash left
@@ -175,9 +176,16 @@ history needs rewriting (O62).
 - **Adding by name** finds the item whose *current name* matches (tier 3's
   item match), or makes a new one. So after "milk" is renamed "whole milk",
   typing "milk" makes a new item `milk~2` with nothing learned (O56).
-- **Renaming** (`ItemRenamed`, and `Edited` with a new name) changes the name
-  and nothing else. Trips, "not here" statements and code links refer to the
-  id, so all follow (O55).
+- **Renaming** (`ItemRenamed`) changes the name and nothing else. Trips,
+  "not here" statements and code links refer to the id, so all follow
+  (O55).
+- **`Edited` with a new name keeps the first build's meaning**: the entry
+  becomes one for the item the new name matches, a new item if none does,
+  and the item it was for is left as it was. First-build journals rely on
+  it, since their later actions name the entry by the new name's id, and so
+  do the tests written against that build. This build's app records
+  `ItemRenamed` when a name is changed, and `Edited` only for a quantity or
+  a note.
 - **Joining.** Renaming onto another item's name makes the renamed item an
   alias of that one. Aliases are state. The record is not rewritten (O20):
   wherever a trip is read, each id is first resolved through the aliases,

@@ -6,9 +6,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 /**
- * One recorded user action (T5). The history is a list of these in the order
- * they happened; nothing in it is ever rewritten (O20), and everything else is
- * derived from it (O21).
+ * One user action, as the journal keeps it (D19). Applied one at a time they
+ * give the state and the record (tier 4 §4); a list of them in the order
+ * they happened builds any case from nothing.
  *
  * [at] is wall-clock epoch milliseconds. It is used only to measure gaps
  * between ticks (tie window) and idleness; order is the position in the list.
@@ -33,8 +33,11 @@ sealed interface Observation {
     ) : Observation
 
     /**
-     * Changes an entry's details. A new [name] that matches another item
-     * relinks the entry to that item; the entry keeps its place in add order.
+     * Changes an entry's details. A new [name] makes the entry one for the
+     * item that name matches, a new item if none does; the entry keeps its
+     * place in add order and the item it was for is left as it was. This is
+     * how the first build changed a name. To correct an item's name, keeping
+     * what was learned of it, see [ItemRenamed].
      */
     @Serializable @SerialName("edited")
     data class Edited(override val at: Long, val item: ItemKey, val name: String, val quantity: String?, val note: String?) : Observation
@@ -95,6 +98,18 @@ sealed interface Observation {
      */
     @Serializable @SerialName("code-linked")
     data class CodeLinked(override val at: Long, val code: Barcode, val name: String) : Observation
+
+    /** Unlinks [code] from whatever item it meant: it is then a code never linked (F13, O58). */
+    @Serializable @SerialName("code-unlinked")
+    data class CodeUnlinked(override val at: Long, val code: Barcode) : Observation
+
+    /**
+     * Corrects the name of [item] to [name] (D10). Everything learned of the
+     * item, said of it and linked to it stays with it (O55). If [name] is
+     * another item's, the two become one item under that name (O57).
+     */
+    @Serializable @SerialName("item-renamed")
+    data class ItemRenamed(override val at: Long, val item: ItemKey, val name: String) : Observation
 }
 
 @Serializable
@@ -103,11 +118,16 @@ enum class Scope { STORE, CHAIN }
 @Serializable
 enum class EndReason { USER, IDLE }
 
-/** Item identity: the typed name, trimmed and case-folded (D10). */
+/**
+ * An item's identity (D10). It is the name the item was first given, trimmed
+ * and case-folded, with `~2`, `~3`… added if that was taken, and it never
+ * changes: renaming an item changes its name, not this (tier 4 §4.1).
+ */
 @Serializable
 @JvmInline
 value class ItemKey(val value: String) {
     companion object {
+        /** The identity of the first item ever given [name]; also how two names are matched. */
         fun of(name: String): ItemKey = ItemKey(name.trim().lowercase())
     }
 }

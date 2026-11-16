@@ -29,7 +29,7 @@ data class State(
     val trip: Trip?,
     /** Ended trips per store, oldest first. */
     val trips: Map<StoreId, List<TripOrder>>,
-    /** Every name ever added, latest spelling per item, for suggestions. */
+    /** Every item ever added, by its current name, for suggestions. */
     val known: Map<ItemKey, String>,
     /** The routing method that orders the current (or next) trip. */
     val router: String,
@@ -37,7 +37,15 @@ data class State(
     val codes: Map<Barcode, ItemKey>,
     /** Each linked code's name as linked: the spelling of last resort for an item never typed. */
     internal val linkedNames: Map<Barcode, String> = emptyMap(),
+    /** Every item there is, added or only linked to, by its current name (D10). */
+    val items: Map<ItemKey, String> = emptyMap(),
 )
+
+/** The item a typed [name] means, or null if it would be a new one (tier 3, item match). */
+fun State.itemNamed(name: String): ItemKey? {
+    val wanted = ItemKey.of(name).value
+    return items.entries.firstOrNull { ItemKey.of(it.value).value == wanted }?.key
+}
 
 /**
  * The name a scan of [code] adds: the latest spelling of the item it is
@@ -183,6 +191,8 @@ internal class Fold(history: List<Observation>) {
                 codes[o.code] = ItemKey.of(o.name)
                 linkedNames[o.code] = o.name.trim()
             }
+            is Observation.CodeUnlinked -> TODO("tier 4 §10 step 2")
+            is Observation.ItemRenamed -> TODO("tier 4 §10 step 2")
         }
     }
 

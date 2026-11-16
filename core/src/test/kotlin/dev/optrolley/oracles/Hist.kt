@@ -134,6 +134,8 @@ class Shadow {
             is Observation.TripEnded -> if (tripActive) endTrip(index)
             is Observation.RouterChosen -> {}
             is Observation.CodeLinked -> {}
+            is Observation.CodeUnlinked -> {}
+            is Observation.ItemRenamed -> {}
         }
     }
 

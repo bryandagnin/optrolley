@@ -180,4 +180,6 @@ fun Observation.copied(): Observation = when (this) {
     is Observation.TripEnded -> copy()
     is Observation.RouterChosen -> copy()
     is Observation.CodeLinked -> copy()
+    is Observation.CodeUnlinked -> copy()
+    is Observation.ItemRenamed -> copy()
 }
