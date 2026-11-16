@@ -20,8 +20,9 @@ data class Presentation(val store: StoreId?, val sections: List<Section>) {
  * The presentation of [history] — a pure function of it (O19), using
  * [routers] to look up the method the history has chosen.
  */
-fun present(history: List<Observation>, routers: Routers = Routers.all): Presentation {
-    val fold = Fold(history)
+fun present(history: List<Observation>, routers: Routers = Routers.all): Presentation = present(Fold(history), routers)
+
+internal fun present(fold: Fold, routers: Routers = Routers.all): Presentation {
     val state = fold.state()
     val store = state.selected ?: return Presentation(null, listOf(Section(SectionKind.LIST, state.entries)))
     val trips = state.trips[store].orEmpty()

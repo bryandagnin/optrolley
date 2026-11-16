@@ -23,14 +23,17 @@ internal object ConfidenceRules {
  * the presented run rather than anything a router keeps to itself, so one
  * rule for every router (O52).
  */
-fun confidence(history: List<Observation>, routers: Routers = Routers.all): Map<ItemKey, Confidence> {
-    val presentation = present(history, routers)
+fun confidence(history: List<Observation>, routers: Routers = Routers.all): Map<ItemKey, Confidence> =
+    confidence(Fold(history), routers)
+
+internal fun confidence(fold: Fold, routers: Routers = Routers.all): Map<ItemKey, Confidence> {
+    val presentation = present(fold, routers)
     val store = presentation.store ?: return emptyMap()
     val run = presentation.sections.firstOrNull { it.kind == SectionKind.RUN }?.entries ?: return emptyMap()
     val rank = HashMap<ItemKey, Int>()
     run.forEach { rank[it.item] = rank.size }
     // Ended trips only, so it holds still for a trip, as the run does (O53).
-    val trips = Fold(history).state().trips[store].orEmpty()
+    val trips = fold.tripsAt(store)
 
     val witnesses = HashMap<ItemKey, MutableList<Agreement>>()
     for (trip in trips.asReversed()) {
