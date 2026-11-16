@@ -172,7 +172,7 @@ class ItemsTest {
     private val pool = listOf("milk", "bread", "eggs", "tea", "jam", "Whole Milk", "rye", "oats")
     private val codes = List(4) { Barcode("0000000$it") }
 
-    private fun randomActions(rnd: Random, n: Int): List<Observation> {
+    internal fun randomActions(rnd: Random, n: Int): List<Observation> {
         val a = shopping()
         repeat(n) {
             val state = replay(a.list)

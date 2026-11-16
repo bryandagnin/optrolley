@@ -1,5 +1,7 @@
 package dev.optrolley.core
 
+import kotlinx.serialization.Serializable
+
 /** An item's presence on the list. */
 data class Entry(
     val item: ItemKey,
@@ -9,11 +11,14 @@ data class Entry(
     val ticked: Boolean,
 )
 
+@Serializable
 data class Store(val id: StoreId, val name: String, val chain: ChainId?)
 
+@Serializable
 data class Chain(val id: ChainId, val name: String)
 
 /** The trip in progress, if any. [store] is null for a session with no store. */
+@Serializable
 data class Trip(val store: StoreId?, val startedAt: Long, val lastAt: Long)
 
 /**
@@ -102,6 +107,63 @@ internal class Fold() {
     constructor(history: List<Observation>) : this() {
         history.forEach(::apply)
     }
+
+    /** Takes up where [stored] and the [record] it was kept with left off (tier 4 §7). */
+    constructor(stored: Stored, record: List<TripRecord>) : this() {
+        require(stored.trips == record.size) { "The state knows of ${stored.trips} trips and the record holds ${record.size}" }
+        count = stored.actions
+        for (e in stored.entries) entries[e.item] = Live(e.item, e.added, e.name, e.quantity, e.note)
+        for (t in stored.ticks) ticks[t.item] = Tick(t.seq, t.at)
+        for (store in stored.stores) stores[store.id] = store
+        for (chain in stored.chains) chains[chain.id] = chain
+        for (i in stored.items) {
+            items[i.item] = i.name
+            named[ItemKey.of(i.name).value] = i.item
+            if (i.known) known[i.item] = i.name
+        }
+        aliases.putAll(stored.aliases)
+        for (c in stored.codes) {
+            codes[c.code] = c.item
+            linkedNames[c.code] = c.name
+        }
+        for (said in stored.said) {
+            val a = availability.getOrPut(said.item, ::Availability)
+            for ((store, seqs) in said.store) a.storeNotHere[store] = ArrayDeque(seqs)
+            for ((store, seqs) in said.chain) a.chainNotHere[store] = ArrayDeque(seqs)
+            a.purchased.putAll(said.purchased)
+        }
+        selected = stored.selected
+        trip = stored.trip
+        chosen = stored.chosen
+        tripChosen = stored.tripChosen
+        for (t in record) {
+            val at = trips.getOrPut(t.store, ::ArrayList)
+            ended += EndedTrip(t.store, at.size)
+            at += TripOrder(t.groups.map { it.toSet() })
+        }
+    }
+
+    /** Everything but the record, as it is kept between runs. */
+    fun stored(): Stored = Stored(
+        actions = count,
+        trips = ended.size,
+        entries = entries.values.sortedBy { it.addSeq }.map { Stored.Listed(it.item, it.addSeq, it.name, it.quantity, it.note) },
+        ticks = ticks.entries.sortedBy { it.value.seq }.map { Stored.Ticked(it.key, it.value.seq, it.value.at) },
+        stores = stores.values.toList(),
+        chains = chains.values.toList(),
+        // Known items first and in their order, which is the order suggestions are offered in.
+        items = known.keys.map { Stored.Item(it, items.getValue(it), known = true) } +
+            items.filterKeys { it !in known }.map { Stored.Item(it.key, it.value, known = false) },
+        aliases = aliases.toSortedMap(compareBy { it.value }),
+        codes = codes.map { Stored.Code(it.key, it.value, linkedNames.getValue(it.key)) },
+        said = availability.entries.sortedBy { it.key.value }.map { (item, a) ->
+            Stored.Said(item, a.storeNotHere.mapValues { it.value.toList() }, a.chainNotHere.mapValues { it.value.toList() }, a.purchased.toMap())
+        },
+        selected = selected,
+        trip = trip,
+        chosen = chosen,
+        tripChosen = tripChosen,
+    )
 
     private class Live(var item: ItemKey, val addSeq: Int, var name: String, var quantity: String?, var note: String?)
 
@@ -211,7 +273,16 @@ internal class Fold() {
         )
     }
 
-    fun apply(o: Observation) {
+    /** Applies [o]. If it ended a trip at a store, that trip is returned, to be appended to the record. */
+    fun apply(o: Observation): TripRecord? {
+        val before = ended.size
+        step(o)
+        if (ended.size == before) return null
+        val (store, index) = ended.last()
+        return TripRecord(store, o.at, trips.getValue(store)[index].groups.map { it.toList() })
+    }
+
+    private fun step(o: Observation) {
         val seq = count++
         trip?.let { trip = it.copy(lastAt = o.at) }
         when (o) {
