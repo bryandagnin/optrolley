@@ -29,11 +29,15 @@ fun confidence(history: List<Observation>, routers: Routers = Routers.all): Map<
 internal fun confidence(fold: Fold, routers: Routers = Routers.all): Map<ItemKey, Confidence> {
     val presentation = present(fold, routers)
     val store = presentation.store ?: return emptyMap()
-    val run = presentation.sections.firstOrNull { it.kind == SectionKind.RUN }?.entries ?: return emptyMap()
-    val rank = HashMap<ItemKey, Int>()
-    run.forEach { rank[it.item] = rank.size }
+    val run = presentation.sections.firstOrNull { it.kind == SectionKind.RUN }?.entries?.map { it.item } ?: return emptyMap()
     // Ended trips only, so it holds still for a trip, as the run does (O53).
-    val trips = fold.tripsAt(store)
+    return fold.sureness(store, run) { confidence(run, fold.tripsAt(store)) }
+}
+
+/** The confidence of each item of a presented [run], against the store's ended [trips], oldest first (tier 3 §I). */
+private fun confidence(run: List<ItemKey>, trips: List<TripOrder>): Map<ItemKey, Confidence> {
+    val rank = HashMap<ItemKey, Int>()
+    run.forEach { rank[it] = rank.size }
 
     val witnesses = HashMap<ItemKey, MutableList<Agreement>>()
     for (trip in trips.asReversed()) {
@@ -61,7 +65,7 @@ internal fun confidence(fold: Fold, routers: Routers = Routers.all): Map<ItemKey
             if (last.size < ConfidenceRules.WITNESSES) last += Agreement(agreed[item] ?: 0, n)
         }
     }
-    return run.associate { it.item to level(witnesses[it.item].orEmpty()) }
+    return run.associateWith { level(witnesses[it].orEmpty()) }
 }
 
 /** [agreed] of [counted] pairs ticked in the presented order. */

@@ -209,8 +209,11 @@ kept for the trip and recomputed when an entry enters or leaves the Run.
 The lab's score for a trip is settled when the trip ends, from the trips
 before it, and kept; it is recomputed only after a join or a rebuild.
 
-`Learned` is a cache of the record and nothing more: dropping it and
-recomputing gives the same presentation (O21), which is how it is tested.
+What is kept this way is a cache of the record and nothing more: dropping
+it and recomputing gives the same presentation (O21), which is how it is
+tested. It lives in memory only, so the first look at the lab after the app
+starts scores every trip again; if that wait is felt, the scores are the
+next thing to store.
 
 ## 5. The router — chosen by oracle, not by argument
 
@@ -293,16 +296,18 @@ the thing it judges will share its blind spots.
   2. **The record** (`trips.jsonl`): if the action ended a trip at a store,
      that trip appended.
   3. **State** (`state.json`): rewritten whole, beside itself and renamed
-     into place. It holds the count of actions and of trips it reflects.
+     into place. It holds the count of actions and of trips it reflects,
+     and how much of the journal.
 
   On start the state and the record are read; the journal is not. If the
-  app died between writes, the counts say so, and the actions the state
-  lacks are applied from the journal's tail before anything is shown; a
-  trip the record has and the state does not know of is told apart by its
-  count and not appended twice. With no state file there is either nothing,
+  app died between writes, the journal is longer than the state says it
+  reflects, and the actions past that point are applied before anything is
+  shown; a trip the record already has from before the crash is told apart
+  by its count and not appended twice. With no state file there is either nothing,
   or a first-build install, which is carried over by folding its journal
-  once (O62). The journal can be cut from the front at any time: its lines
-  are numbered from the count where it begins.
+  once (O62). The state notes how many bytes of the journal it reflects,
+  so that tail is found without reading what came before, and the journal
+  can be emptied at any time without the state noticing (O59).
 
   Not SQLite: three small files with one writer, and the only crash to
   recover from is "the last action is in the journal and not yet in the
@@ -480,6 +485,10 @@ suggests.
 
 Each step ends with the whole suite run; the oracle tests the first build
 passed keep passing throughout, unless tier 3 restated them.
+
+**The code has reached step 4.** Steps 5 and 6 remain, and with them the
+app's own way to rename an item: until step 5 the actions exist and nothing
+on screen records them.
 
 1. **The step function.** `apply`, `Record`, state that can be stored, with
    `replay` and `present` as the fold of it (P1). No behaviour changes.

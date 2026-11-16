@@ -46,6 +46,9 @@ class Book private constructor(private val fold: Fold) {
 
     fun score(routers: Routers = Routers.all): Map<String, List<TripScore>> = score(fold, routers)
 
+    /** Drops everything learned, to be worked out again from the record: what is shown must not change (O21). */
+    fun relearn() = fold.forget()
+
     /** Everything but the record, to be kept between runs. */
     fun stored(): Stored = fold.stored()
 

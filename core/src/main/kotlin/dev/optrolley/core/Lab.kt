@@ -14,13 +14,13 @@ data class TripScore(val store: StoreId, val tripIndex: Int, val pairs: Int, val
 fun score(history: List<Observation>, routers: Routers = Routers.all): Map<String, List<TripScore>> = score(Fold(history), routers)
 
 internal fun score(fold: Fold, routers: Routers = Routers.all): Map<String, List<TripScore>> {
-    val trips = fold.state().trips
     val result = LinkedHashMap<String, List<TripScore>>()
     for (router in routers.list) {
         // Trips in the order they ended, across stores, as the lab lists them.
-        result[router.id] = fold.ended.map { (store, k) ->
-            val before = trips.getValue(store).subList(0, k)
-            scoreTrip(router, before, trips.getValue(store)[k], store, k)
+        // A trip is scored once, when first asked about after it ends (tier 4 §4.2).
+        result[router.id] = fold.scores(router) { (store, k) ->
+            val trips = fold.tripsAt(store)
+            scoreTrip(router, trips.subList(0, k), trips[k], store, k)
         }
     }
     return result

@@ -25,8 +25,10 @@ fun present(history: List<Observation>, routers: Routers = Routers.all): Present
 internal fun present(fold: Fold, routers: Routers = Routers.all): Presentation {
     val state = fold.state()
     val store = state.selected ?: return Presentation(null, listOf(Section(SectionKind.LIST, state.entries)))
-    val trips = state.trips[store].orEmpty()
-    val placed = placedBy(trips)
+    val router = routers.byId(fold.routerChoice ?: routers.defaultId)
+    val learned = fold.learned(store, router)
+    val placed = learned.placed
+    val rank = learned.rank
     val unplaced = ArrayList<Entry>()
     val run = ArrayList<Entry>()
     val elsewhere = ArrayList<Entry>()
@@ -37,11 +39,6 @@ internal fun present(fold: Fold, routers: Routers = Routers.all): Presentation {
             else -> unplaced += e
         }
     }
-    // The router orders every item placed at the store, not just those on the
-    // list, so adding or moving an entry cannot reorder the rest (O8, O30).
-    val router = routers.byId(fold.routerChoice ?: routers.defaultId)
-    val rank = HashMap<ItemKey, Int>()
-    for (item in safeOrder(router, trips, placed)) rank[item] = rank.size
     // Whatever the router failed to order is still shown (T1), in add order:
     // the sort is stable and the run starts in add order.
     run.sortBy { rank[it.item] ?: Int.MAX_VALUE }

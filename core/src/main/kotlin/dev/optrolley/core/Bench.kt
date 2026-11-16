@@ -17,12 +17,14 @@ data class BenchRow(
     val present: Map<String, Double>,
     val confidence: Map<String, Double>,
     val lab: Double?,
+    /** What a tap costs the app as it is built now: one tick applied to kept state, then what is shown. */
+    val tap: Double,
 ) {
     /** What one action costs with [router] chosen. */
     fun action(router: String): Double = settle + 2 * replay + present.getValue(router) + confidence.getValue(router)
 
-    fun line(): String = "%5d %6d %7.1f %6.1f %6.1f %7s | %s".format(
-        Locale.ROOT, trips, observations, decode, settle, replay, lab?.let { "%.0f".format(Locale.ROOT, it) } ?: "-",
+    fun line(): String = "%5d %6d %7.2f %7.1f %6.1f %6.1f %7s | %s".format(
+        Locale.ROOT, trips, observations, tap, decode, settle, replay, lab?.let { "%.0f".format(Locale.ROOT, it) } ?: "-",
         present.keys.joinToString(" | ") { "%6.1f %6.1f %6.1f".format(Locale.ROOT, present.getValue(it), confidence.getValue(it), action(it)) },
     )
 }
@@ -33,9 +35,10 @@ data class BenchRow(
  */
 object Bench {
     fun header(routers: Routers = Routers.all): String = listOf(
-        "ms, median; lab once. action = settle + 2 replay + present + confid.",
-        "%5s %6s %7s %6s %6s %7s | %s".format("trips", "obs", "decode", "settle", "replay", "lab", routers.list.joinToString(" | ") { "%-20s".format(it.id) }),
-        "%5s %6s %7s %6s %6s %7s | %s".format("", "", "", "", "", "", routers.list.joinToString(" | ") { "%6s %6s %6s".format("pres.", "conf.", "action") }),
+        "ms, median; lab once. tap = a tick on kept state, then what is shown: what the app does now.",
+        "The rest is the first build: action = settle + 2 replay + present + confid., each from the whole journal.",
+        "%5s %6s %7s %7s %6s %6s %7s | %s".format("trips", "obs", "tap", "decode", "settle", "replay", "lab", routers.list.joinToString(" | ") { "%-20s".format(it.id) }),
+        "%5s %6s %7s %7s %6s %6s %7s | %s".format("", "", "", "", "", "", "", routers.list.joinToString(" | ") { "%6s %6s %6s".format("pres.", "conf.", "action") }),
     ).joinToString("\n")
 
     /**
@@ -62,7 +65,23 @@ object Bench {
             present = present,
             confidence = confidence,
             lab = if (lab) once { score(history, routers) } else null,
+            tap = tap(history, routers),
         )
+    }
+
+    /** A tick, then an untick, of an entry on the list, each followed by all that is shown; half the pair. */
+    private fun tap(history: List<Observation>, routers: Routers): Double {
+        val fold = Fold(history)
+        val entry = fold.state().entries.first { !it.ticked }.item
+        var at = history.last().at
+        return ms {
+            for (action in listOf(Observation.Ticked(++at, entry), Observation.Unticked(++at, entry))) {
+                fold.apply(action)
+                fold.state()
+                present(fold, routers)
+                confidence(fold, routers)
+            }
+        } / 2
     }
 
     private fun once(block: () -> Unit): Double {

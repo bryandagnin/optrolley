@@ -218,6 +218,57 @@ internal class Fold() {
     /** The router choice ordering the current trip, or the next one if none is in progress. */
     val routerChoice: String? get() = if (trip != null) tripChosen else chosen
 
+    /** What a router makes of one store's trips: which items are placed there, and each one's place in the run. */
+    class Learned(val placed: Set<ItemKey>, val rank: Map<ItemKey, Int>)
+
+    /**
+     * Kept from one trip's end to the next (D18, tier 4 §4.2): nothing in it
+     * can change in between, so a tick or an add only reads it. All of it is
+     * derived from the record and can be dropped at any time (O21).
+     */
+    private val learned = HashMap<Pair<StoreId, Router>, Learned>()
+    private var sureness: Triple<StoreId, List<ItemKey>, Map<ItemKey, Confidence>>? = null
+    private val scores = HashMap<Router, MutableList<TripScore>>()
+
+    /** Forgets what was learned of [store], or of every store: its trips, or how they are read, have changed. */
+    private fun relearn(store: StoreId?) {
+        if (store == null) {
+            tripsNow.clear()
+            learned.clear()
+            scores.clear()
+        } else {
+            tripsNow.remove(store)
+            learned.keys.removeAll { it.first == store }
+        }
+        sureness = null
+    }
+
+    /** Drops everything learned, to be worked out again from the record (O21). */
+    fun forget() = relearn(null)
+
+    fun learned(store: StoreId, router: Router): Learned = learned.getOrPut(store to router) {
+        val trips = tripsAt(store)
+        val placed = placedBy(trips)
+        // The router orders every item placed at the store, not just those on the
+        // list, so adding or moving an entry cannot reorder the rest (O8, O30).
+        val rank = HashMap<ItemKey, Int>()
+        for (item in safeOrder(router, trips, placed)) rank[item] = rank.size
+        Learned(placed, rank)
+    }
+
+    /** The confidence of a [run] at [store], worked out by [compute] only when the run or the store's trips have changed. */
+    fun sureness(store: StoreId, run: List<ItemKey>, compute: () -> Map<ItemKey, Confidence>): Map<ItemKey, Confidence> {
+        sureness?.let { (s, r, known) -> if (s == store && r == run) return known }
+        return compute().also { sureness = Triple(store, run, it) }
+    }
+
+    /** [router]'s score for each ended trip, in the order they ended; [one] is asked only for trips not yet scored. */
+    fun scores(router: Router, one: (EndedTrip) -> TripScore): List<TripScore> {
+        val known = scores.getOrPut(router, ::ArrayList)
+        for (k in known.size until ended.size) known += one(ended[k])
+        return known.toList()
+    }
+
     /** The trips on record at [store], oldest first, with joined items read as the one they became. */
     fun tripsAt(store: StoreId): List<TripOrder> {
         val walked = trips[store] ?: return emptyList()
@@ -264,7 +315,7 @@ internal class Fold() {
             chains = LinkedHashMap(chains),
             selected = selected,
             trip = trip,
-            trips = trips.keys.associateWith { tripsAt(it).toList() },
+            trips = trips.keys.associateWith { java.util.Collections.unmodifiableList(tripsAt(it)) },
             known = LinkedHashMap(known),
             router = Routers.all.byId(routerChoice ?: Routers.all.defaultId).id,
             codes = LinkedHashMap(codes),
@@ -418,7 +469,7 @@ internal class Fold() {
         items.remove(from)
         aliases[from] = to
         for (alias in aliases.keys.toList()) if (aliases[alias] == from) aliases[alias] = to
-        tripsNow.clear()
+        relearn(null)
         if (known.remove(from) != null && to !in known) known[to] = items.getValue(to)
         for (code in codes.keys.toList()) if (codes[code] == from) codes[code] = to
         availability.remove(from)?.let { said ->
@@ -457,7 +508,7 @@ internal class Fold() {
             val storeTrips = trips.getOrPut(store, ::ArrayList)
             ended += EndedTrip(store, storeTrips.size)
             storeTrips += TripOrder(groups)
-            tripsNow.remove(store)
+            relearn(store)
             for (e in final) {
                 val purchased = availability.getOrPut(e.key, ::Availability).purchased
                 purchased[store] = maxOf(purchased[store] ?: -1, e.value.seq)
