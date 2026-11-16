@@ -2,11 +2,12 @@ package dev.optrolley.autoroute
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.optrolley.core.Backup
 import dev.optrolley.core.Barcode
+import dev.optrolley.core.Book
 import dev.optrolley.core.ChainId
 import dev.optrolley.core.Confidence
 import dev.optrolley.core.EndReason
-import dev.optrolley.core.Export
 import dev.optrolley.core.ItemKey
 import dev.optrolley.core.Observation
 import dev.optrolley.core.Presentation
@@ -14,13 +15,9 @@ import dev.optrolley.core.Routers
 import dev.optrolley.core.Scope
 import dev.optrolley.core.State
 import dev.optrolley.core.StoreId
+import dev.optrolley.core.TripRecord
 import dev.optrolley.core.TripScore
-import dev.optrolley.core.confidence
 import dev.optrolley.core.nameFor
-import dev.optrolley.core.present
-import dev.optrolley.core.replay
-import dev.optrolley.core.score
-import dev.optrolley.core.settle
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -36,6 +33,7 @@ import java.util.UUID
 
 data class UiState(
     val loaded: Boolean = false,
+    /** The journal, read from its file only if something asks for it. */
     val history: List<Observation> = emptyList(),
     val state: State? = null,
     val presentation: Presentation? = null,
@@ -69,10 +67,11 @@ data class ScanEvent(
 )
 
 /**
- * Holds the history and derives everything shown from it. Each action is
- * settled against the clock first (O19 keeps the clock out of [present]),
- * then recorded and synced, then the presentation recomputed. Actions run one
- * at a time, in the order they were made.
+ * Holds the state and the record, and derives everything shown from them.
+ * Each action is settled against the clock first (O19 keeps the clock out of
+ * the presentation), applied, kept and synced, then the presentation
+ * recomputed. Actions run one at a time, in the order they were made. The
+ * journal is written to and not read (tier 4 §7).
  */
 class AppViewModel(
     private val store: HistoryStore,
@@ -85,18 +84,19 @@ class AppViewModel(
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
     private val lock = Mutex()
-    private var history: List<Observation> = emptyList()
+    private val kept = Kept(store)
+    private var book = Book()
 
     init {
         serially {
             try {
-                history = store.load()
+                book = kept.open()
             } catch (e: CorruptHistoryException) {
                 _ui.update { it.copy(loaded = true, fatal = e.message) }
                 return@serially
             }
             _ui.update { it.copy(loaded = true) }
-            settleAndRecord(emptyList())
+            record(emptyList())
         }
     }
 
@@ -244,7 +244,7 @@ class AppViewModel(
     fun availableAfterAll(item: ItemKey) = act { state ->
         val selected = state.selected ?: return@act emptyList()
         val now = clock()
-        standingNotHere(history, item, selected, state).map { (store, scope) ->
+        book.standingNotHere(item, selected).map { (store, scope) ->
             Observation.NotHereUndone(now, item, store, scope)
         }
     }
@@ -294,7 +294,7 @@ class AppViewModel(
     }
 
     fun computeLab() = serially {
-        val scores = withContext(compute) { score(history, routers) }
+        val scores = withContext(compute) { book.score(routers) }
         _ui.update { it.copy(lab = scores) }
     }
 
@@ -302,20 +302,20 @@ class AppViewModel(
 
     fun exportTo(write: (String) -> Unit) = serially {
         try {
-            write(Export.encode(history))
-            say("Exported ${history.size} recorded actions")
+            write(Backup.encode(book.stored(), kept.readRecord(), store.load()))
+            say("Exported ${book.actions} recorded actions")
         } catch (e: IOException) {
             say("Export failed: ${e.message}")
         }
     }
 
     fun importFrom(read: () -> String) = serially {
-        if (history.isNotEmpty() || !store.isEmpty()) {
-            say("Import only works on a fresh install. This one already has ${history.size} recorded actions; export them first if you need them, then clear the app's data.")
+        if (book.actions > 0 || !kept.isEmpty()) {
+            say("Import only works on a fresh install. This one already has ${book.actions} recorded actions; export them first if you need them, then clear the app's data.")
             return@serially
         }
         val imported = try {
-            Export.decode(read())
+            Backup.decode(read())
         } catch (e: IllegalArgumentException) {
             say("That file is not an Optrolley export")
             return@serially
@@ -323,16 +323,15 @@ class AppViewModel(
             say("Could not read that file: ${e.message}")
             return@serially
         }
-        store.importAll(imported)
-        history = imported
+        book = kept.import(imported)
         recompute()
-        say("Imported ${imported.size} recorded actions")
+        say("Imported ${book.actions} recorded actions")
     }
 
     // --- Lifecycle ---
 
     /** A trip that idled out while the app was away ends now (tier 4 §7). */
-    fun onResume() = serially { settleAndRecord(emptyList()) }
+    fun onResume() = serially { if (_ui.value.fatal == null) record(emptyList()) }
 
     fun messageShown(message: UiMessage) = _ui.update { if (it.message?.id == message.id) it.copy(message = null) else it }
 
@@ -342,29 +341,34 @@ class AppViewModel(
 
     private fun act(make: (State) -> List<Observation>) = serially {
         if (_ui.value.fatal != null) return@serially
-        val settled = settle(history, clock())
-        val state = replay(settled)
-        record(settled, make(state))
+        val trips = ArrayList<TripRecord>()
+        val settled = settle(trips)
+        record(settled, make(book.state), trips)
     }
 
-    private suspend fun settleAndRecord(extra: List<Observation>) {
-        if (_ui.value.fatal != null) return
-        record(settle(history, clock()), extra)
+    /** Ends a trip that has idled out, as of when it did, before anything new is applied. */
+    private fun settle(trips: MutableList<TripRecord>): List<Observation> {
+        val ended = book.settle(clock()) ?: return emptyList()
+        book.apply(ended)?.let { trips += it }
+        return listOf(ended)
     }
 
-    /** Persists what settling appended plus [extra], then derives the new view. */
-    private suspend fun record(settled: List<Observation>, extra: List<Observation>) {
-        val appended = settled.drop(history.size) + extra
-        if (appended.isEmpty() && _ui.value.state != null) return
-        store.append(appended)
-        history = history + appended
+    private suspend fun record(extra: List<Observation>) {
+        val trips = ArrayList<TripRecord>()
+        record(settle(trips), extra, trips)
+    }
+
+    /** Applies [extra], keeps it with what settling [applied], then derives the new view. */
+    private suspend fun record(applied: List<Observation>, extra: List<Observation>, trips: MutableList<TripRecord>) {
+        if (applied.isEmpty() && extra.isEmpty() && _ui.value.state != null) return
+        for (action in extra) book.apply(action)?.let { trips += it }
+        kept.keep(book, applied + extra, trips)
         recompute()
     }
 
     private suspend fun recompute() {
-        val h = history
-        val (state, presentation, sureness) = withContext(compute) { Triple(replay(h), present(h, routers), confidence(h, routers)) }
-        _ui.update { it.copy(history = h, state = state, presentation = presentation, confidence = sureness, lab = null) }
+        val (state, presentation, sureness) = withContext(compute) { Triple(book.state, book.present(routers), book.confidence(routers)) }
+        _ui.update { it.copy(history = Journal(store), state = state, presentation = presentation, confidence = sureness, lab = null) }
     }
 
     private fun say(text: String) = _ui.update { it.copy(message = UiMessage(text)) }
@@ -399,31 +403,11 @@ sealed interface ChainChoice {
     }
 }
 
-/**
- * The (store, scope) pairs whose latest statement about [item] is "not here"
- * and that cover [at]: said of [at] itself, or of the chain [at] is in now.
- */
-internal fun standingNotHere(
-    history: List<Observation>,
-    item: ItemKey,
-    at: StoreId,
-    state: State,
-): List<Pair<StoreId, Scope>> {
-    val standing = linkedMapOf<Pair<StoreId, Scope>, Boolean>()
-    for (o in history) {
-        when (o) {
-            is Observation.NotHere -> if (o.item == item) standing[o.store to o.scope] = true
-            is Observation.NotHereUndone -> if (o.item == item) standing[o.store to o.scope] = false
-            else -> {}
-        }
-    }
-    val chain = state.stores[at]?.chain
-    return standing.filter { (key, on) ->
-        on && when (key.second) {
-            Scope.STORE -> key.first == at
-            Scope.CHAIN -> chain != null && state.stores[key.first]?.chain == chain
-        }
-    }.keys.toList()
+/** The journal as a list, read from its file the first time anything looks, since the app itself never does. */
+private class Journal(store: HistoryStore) : AbstractList<Observation>() {
+    private val read by lazy { store.load() }
+    override val size: Int get() = read.size
+    override fun get(index: Int): Observation = read[index]
 }
 
 private fun Observation.restamped(at: Long): Observation = when (this) {
