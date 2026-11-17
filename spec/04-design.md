@@ -436,11 +436,21 @@ suggests.
   is open (a `CodeLinked` back to the same item).
 - **Product name and picture.** A `Catalogue` answers a code with a name and
   a small picture, or nothing. The real one asks Open Food Facts for that
-  one product by its number, over HTTPS, with the platform's own
-  `HttpURLConnection` and no library `[from memory — the endpoint, the
-  fields asked for and its coverage of local products are checked when it
-  is built]`. The request carries the code and an agent string naming the
-  app; no account, no cookie, nothing about the user (O61).
+  one product, over HTTPS, with the platform's own `HttpURLConnection` and
+  no library: `GET /api/v2/product/{code}?fields=product_name,brands,image_front_small_url`
+  on `world.openfoodfacts.org`; `status` 1 in the answer means found
+  [evidence: its API documentation, read 2026-11-17; what a miss looks like
+  is not documented there and one request for an unknown code returned 404,
+  so anything but a found product is taken as no answer]. The host is one
+  constant. The request carries the code and nothing about the user: no
+  account, no cookie (O61).
+- **What the catalogue asks of a client** [same evidence]: an agent string
+  of the form `AppName/Version (contact)`; no more than 15 product reads a
+  minute from one address, on pain of a ban, so look-ups are made one at a
+  time and spaced at least five seconds apart; and its data is under the
+  Open Database License with pictures under CC BY-SA, so the library says
+  where they came from. Whether it knows this country's products is still
+  untested.
 - **The catalogue's answers are a cache** in the app's cache directory, by
   code: the answer, or that there was none, and when. Android may clear it;
   so may the user. It is not state, not in the export (O47), and nothing
