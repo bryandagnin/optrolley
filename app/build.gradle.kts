@@ -1,10 +1,27 @@
 import com.android.build.api.artifact.SingleArtifact
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
+
+// Who to reach about this build's look-ups, sent to the catalogue as part of
+// the agent string (tier 4 §7.3). It is whoever built the app, so it is not
+// in the repository: set `optrolley.contact` in local.properties (ignored),
+// or OPTROLLEY_CONTACT, or -Poptrolley.contact. Unset, no contact is sent.
+val catalogueContact: String = providers.gradleProperty("optrolley.contact")
+    .orElse(providers.environmentVariable("OPTROLLEY_CONTACT"))
+    .orElse(
+        providers.provider {
+            val local = rootProject.file("local.properties")
+            if (!local.isFile) null
+            else Properties().apply { local.inputStream().use { load(it) } }.getProperty("optrolley.contact")
+        },
+    )
+    .getOrElse("")
+    .trim()
 
 android {
     namespace = "dev.optrolley.autoroute"
@@ -18,10 +35,12 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        resValue("string", "catalogue_contact", catalogueContact)
     }
 
     buildFeatures {
         compose = true
+        resValues = true
     }
 
     compileOptions {

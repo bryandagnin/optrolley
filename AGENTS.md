@@ -145,6 +145,11 @@ committed in the meantime.
   what changed — the diff already shows that.
 - **History lives in git.** No changelog sections, no "added on <date>"
   annotations, no narrating an earlier state of a document in its own prose.
+- **The builder's contact is not in the repository.** The catalogue asks
+  each client to name a contact (tier 4 §7.3). It comes from
+  `optrolley.contact` in `local.properties`, which is ignored, or from
+  `OPTROLLEY_CONTACT`; a fork sets its own, and a build with none sends
+  none.
 - **Exported lists and histories are personal data.** They stay out of the
   repository; `/exports/` is ignored.
 

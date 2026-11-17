@@ -445,7 +445,9 @@ suggests.
   constant. The request carries the code and nothing about the user: no
   account, no cookie (O61).
 - **What the catalogue asks of a client** [same evidence]: an agent string
-  of the form `AppName/Version (contact)`; no more than 15 product reads a
+  of the form `AppName/Version (contact)`, the contact being whoever built
+  the app and so set at build time, outside the repository
+  (`optrolley.contact`); no more than 15 product reads a
   minute from one address, on pain of a ban, so look-ups are made one at a
   time and spaced at least five seconds apart; and its data is under the
   Open Database License with pictures under CC BY-SA, so the library says
