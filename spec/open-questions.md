@@ -195,3 +195,17 @@ Entering by another door reverses the route. One reversed trip would read as
 a rearrangement and unlearn a good order. Possible answers: recognise a trip
 that runs against the model and learn from its mirror; or offer to flip the
 run. Needs field evidence that it happens often enough to matter.
+
+### H11. The catalogue cloned instead of asked
+
+The library asks Open Food Facts about one code at a time, and that
+service bans an address that reads more than 15 products a minute (tier 4
+§7.3). It also publishes the whole database nightly: as CSV about 0.9 GB
+compressed and 9 GB unpacked `[evidence: its data page, read 2026-11-17]`,
+of which the library needs only each code's name, brand and thumbnail
+address. A companion on a PC could clone that and hand the phone the few
+columns it needs, so no look-up ever goes out and the limit never applies.
+Pictures are not in the dump and would still be fetched one by one.
+
+**Revisit when** look-ups prove unreliable, or codes start being linked
+many at a time. A few items at a time, as now, stays far inside the limit.
