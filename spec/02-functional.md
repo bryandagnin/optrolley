@@ -1,7 +1,7 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-17
 
 ---
 
@@ -194,10 +194,15 @@ shop.
 - **A code can be unlinked** from its item. It is then a code never seen:
   its next scan asks for a name (F12).
 - **Each code shows its product's name and a small picture**, to tell apart
-  codes that share an item. They are looked up by the code's number when
-  there is a connection, and kept on the phone. The look-up sends the
-  number and nothing else. With no connection, or no answer, the code shows
-  its number, and nothing else in the app is any different.
+  codes that share an item. They are looked up by the code's number and
+  kept on the phone. The look-up sends the number and nothing else. With
+  no connection, or no answer, the code shows its number, and nothing else
+  in the app is any different.
+- **A code is looked up when the user asks, or when it is scanned to add.**
+  In the library a code can be looked up, or all those not yet looked up
+  can be, one after another. A code scanned to add something, at home, is
+  looked up by itself if it never has been. A code scanned to tick, in the
+  shop, is not. Nothing waits for an answer.
 - A product's name is never used as an item's name, and is never shown on
   the list (D14).
 

@@ -1,7 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-17
 
 ---
 
@@ -456,9 +456,23 @@ suggests.
 - **The catalogue's answers are a cache** in the app's cache directory, by
   code: the answer, or that there was none, and when. Android may clear it;
   so may the user. It is not state, not in the export (O47), and nothing
-  reads it but this screen (O60). A code is asked about when the library
-  shows it and the cache has no answer, never from the list or the scanner.
-  No connection is the same as no answer, tried again another day.
+  reads it but this screen (O60).
+- **When a code is looked up** (F13). By hand in the library: one code, or
+  every code the cache holds nothing for. By itself when a code is scanned
+  in Add mode, named for the first time or not, and the cache holds nothing
+  for it; never in Tick mode, where the phone is in a shop. A code the
+  catalogue did not know is remembered as such and not asked about again by
+  itself; asking by hand asks again.
+- **One queue, paced by the app.** Every look-up, asked for or automatic,
+  joins one queue that sends one request at a time, the next no sooner than
+  five seconds after the last began: twelve a minute against the fifteen
+  allowed. A code already waiting is not queued twice. The catalogue saying
+  to slow down (429 or 503), or two failures running, stops the queue until
+  the user next asks or the app is next opened; what was waiting is
+  dropped, not retried. Nothing else in the app waits on the queue, and
+  the scan that started a look-up is finished before the request is made.
+  No connection is the same as no answer: nothing is remembered, and the
+  code can be asked about another day.
 
 ## 8. Internal predicates (tier 4 — NOT frozen)
 
