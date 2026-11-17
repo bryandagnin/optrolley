@@ -51,7 +51,6 @@ import dev.optrolley.autoroute.ScanEvent
 import dev.optrolley.autoroute.scan.BarcodeDecoder
 import dev.optrolley.autoroute.scan.Scanner
 import dev.optrolley.core.Barcode
-import dev.optrolley.core.ItemKey
 import dev.optrolley.core.State
 
 /** Square, as the camera is asked to crop (CameraScanner): nothing shown is left unread at the sides. */
@@ -171,7 +170,8 @@ internal fun NamingDialog(
         (onList + known)
             .distinctBy { it.first }
             .filter { typed.isEmpty() || it.second.lowercase().startsWith(typed) }
-            .filter { it.first != ItemKey.of(name) }
+            // What is typed already is not offered back; matched by name, as an id need not be the name.
+            .filter { it.second.trim().lowercase() != typed }
             .take(if (typed.isEmpty()) onList.size.coerceAtMost(12) else 10)
     }
     AlertDialog(

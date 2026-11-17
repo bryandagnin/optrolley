@@ -8,6 +8,7 @@ import dev.optrolley.core.Book
 import dev.optrolley.core.ChainId
 import dev.optrolley.core.Confidence
 import dev.optrolley.core.EndReason
+import dev.optrolley.core.Entry
 import dev.optrolley.core.ItemKey
 import dev.optrolley.core.Observation
 import dev.optrolley.core.Presentation
@@ -17,6 +18,7 @@ import dev.optrolley.core.State
 import dev.optrolley.core.StoreId
 import dev.optrolley.core.TripRecord
 import dev.optrolley.core.TripScore
+import dev.optrolley.core.itemNamed
 import dev.optrolley.core.nameFor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +53,12 @@ data class UiState(
     val scans: List<ScanEvent> = emptyList(),
 )
 
-data class UiMessage(val text: String, val undo: List<Observation>? = null, val id: Long = System.nanoTime())
+/**
+ * A word to the user. [undo] makes what takes it back from the state when
+ * Undo is pressed, not when the message is shown: the item it names may have
+ * been renamed in between, and its old name would then make a new one (O56).
+ */
+data class UiMessage(val text: String, val undo: ((State, Long) -> List<Observation>)? = null, val id: Long = System.nanoTime())
 
 /**
  * One scan of a linked code: the item it means, whether it was added (or
@@ -96,47 +103,101 @@ class AppViewModel(
                 return@serially
             }
             _ui.update { it.copy(loaded = true) }
-            record(emptyList())
+            settled()
         }
     }
 
     // --- The list ---
 
-    fun add(name: String, quantity: String?, note: String?) = act { state ->
-        val key = ItemKey.of(name)
-        if (key.value.isEmpty()) return@act emptyList()
-        if (state.entries.any { it.item == key }) {
-            _ui.update { it.copy(focus = key, message = UiMessage("${name.trim()} is already on the list")) }
-            return@act emptyList()
-        }
-        _ui.update { it.copy(focus = key) }
-        listOf(Observation.Added(clock(), name.trim(), quantity.clean(), note.clean()))
-    }
+    fun add(name: String, quantity: String?, note: String?) = inSteps(
+        { state ->
+            val n = name.trim()
+            if (n.isEmpty()) return@inSteps emptyList()
+            val there = state.itemNamed(n)?.takeIf { item -> state.entries.any { it.item == item } }
+            if (there != null) {
+                _ui.update { it.copy(focus = there, message = UiMessage("$n is already on the list")) }
+                return@inSteps emptyList()
+            }
+            listOf(Observation.Added(clock(), n, quantity.clean(), note.clean()))
+        },
+        // A new item's id is the state's to give, since an old name may hold the obvious one (O56).
+        { state ->
+            state.itemNamed(name)?.let { item -> _ui.update { it.copy(focus = item) } }
+            emptyList()
+        },
+    )
 
     fun setTicked(item: ItemKey, ticked: Boolean) = act {
         listOf(if (ticked) Observation.Ticked(clock(), item) else Observation.Unticked(clock(), item))
     }
 
-    fun edit(item: ItemKey, name: String, quantity: String?, note: String?) = act { state ->
-        val entry = state.entries.firstOrNull { it.item == item } ?: return@act emptyList()
+    /**
+     * Changes an entry. A new name renames its item, here and everywhere
+     * (F1); `Edited` carries only the quantity and note, under the name the
+     * item has by then, since a different name there would move the entry to
+     * another item instead (tier 4 §4.1). Joining is not asked about here:
+     * the screen asks first (tier 4 §7.3).
+     */
+    fun edit(item: ItemKey, name: String, quantity: String?, note: String?) {
         val n = name.trim()
-        if (n.isEmpty()) return@act emptyList()
         val q = quantity.clean()
         val o = note.clean()
-        if (n == entry.name && q == entry.quantity && o == entry.note) return@act emptyList()
-        listOf(Observation.Edited(clock(), item, n, q, o))
+        var was: Entry? = null
+        var survivor = item
+        inSteps(
+            { state ->
+                val entry = state.entries.firstOrNull { it.item == item }
+                if (entry == null || n.isEmpty()) return@inSteps emptyList()
+                was = entry
+                survivor = state.joinedBy(item, n) ?: item
+                if (n == entry.name) emptyList() else listOf(Observation.ItemRenamed(clock(), item, n))
+            },
+            // After a join the entry is the survivor's, holding what O57 kept of
+            // both; only what the user changed in the dialog is laid over that.
+            { state ->
+                val before = was ?: return@inSteps emptyList()
+                val entry = state.entries.firstOrNull { it.item == survivor } ?: return@inSteps emptyList()
+                val quantityNow = if (q != before.quantity) q else entry.quantity
+                val noteNow = if (o != before.note) o else entry.note
+                if (quantityNow == entry.quantity && noteNow == entry.note) emptyList()
+                else listOf(Observation.Edited(clock(), survivor, entry.name, quantityNow, noteNow))
+            },
+        )
     }
 
     fun remove(item: ItemKey) = act { state ->
         val entry = state.entries.firstOrNull { it.item == item } ?: return@act emptyList()
-        val undo = Observation.Added(0, entry.name, entry.quantity, entry.note)
-        _ui.update { it.copy(message = UiMessage("Removed ${entry.name}", undo = listOf(undo))) }
+        val undo = { now: State, at: Long -> listOf(Observation.Added(at, now.items[item] ?: entry.name, entry.quantity, entry.note)) }
+        _ui.update { it.copy(message = UiMessage("Removed ${entry.name}", undo = undo)) }
         listOf(Observation.Removed(clock(), item))
     }
 
-    /** Replays a message's undo, restamped with the time it is actually done. */
-    fun undo(message: UiMessage) = act {
-        message.undo.orEmpty().map { it.restamped(clock()) }
+    /** Does what a message's undo makes of the state now. */
+    fun undo(message: UiMessage) = act { state ->
+        message.undo?.invoke(state, clock()).orEmpty()
+    }
+
+    // --- The library (F13) ---
+
+    /** Renames [item] as changing its entry's name would (F1); the screen asks first if it joins two. */
+    fun renameItem(item: ItemKey, name: String) = act { state ->
+        val n = name.trim()
+        val current = state.items[item]
+        if (n.isEmpty() || current == null || n == current) emptyList()
+        else listOf(Observation.ItemRenamed(clock(), item, n))
+    }
+
+    /** Unlinks [code]: its next scan asks for a name (O58). Undo links it back to the same item. */
+    fun unlink(code: Barcode) = act { state ->
+        val item = state.codes[code] ?: return@act emptyList()
+        val name = state.items[item] ?: state.nameFor(code).orEmpty()
+        val undo = { now: State, at: Long ->
+            // Not over a link made since, and not to an item joined away meanwhile.
+            val to = now.items[item]
+            if (to == null || code in now.codes) emptyList() else listOf<Observation>(Observation.CodeLinked(at, code, to))
+        }
+        _ui.update { it.copy(message = UiMessage("Unlinked ${code.value} from $name", undo = undo)) }
+        listOf(Observation.CodeUnlinked(clock(), code))
     }
 
     // --- Scanning (F12) ---
@@ -161,12 +222,19 @@ class AppViewModel(
     }
 
     /** Links [code] to the item [name] matches, then adds (or with [tick], ticks) that item as a scan of [code] would. */
-    fun link(code: Barcode, name: String, tick: Boolean = false) = act { state ->
+    fun link(code: Barcode, name: String, tick: Boolean = false) {
         val n = name.trim()
-        if (n.isEmpty()) return@act emptyList()
-        _ui.update { it.copy(naming = null) }
-        val now = clock()
-        listOf(Observation.CodeLinked(now, code, n)) + logged(scan(state, code, n, tick, now))
+        if (n.isEmpty()) return
+        var now = 0L
+        inSteps(
+            {
+                now = clock()
+                _ui.update { it.copy(naming = null) }
+                listOf(Observation.CodeLinked(now, code, n))
+            },
+            // Scanned once linked, so the item the link names, made or found, is known by its id.
+            { state -> logged(scan(state, code, n, tick, now)) },
+        )
     }
 
     /** The user declined to name the code in [UiState.naming]; nothing is recorded. */
@@ -177,14 +245,22 @@ class AppViewModel(
      * back if it still stands, the new item is added or ticked in its place
      * as the scan did, and the log shows the new outcome where the old one was.
      */
-    fun relink(event: ScanEvent, name: String) = act { state ->
+    fun relink(event: ScanEvent, name: String) {
         val n = name.trim()
-        if (n.isEmpty()) return@act emptyList()
-        val now = clock()
-        val takeBack = if (ItemKey.of(n) == event.item) emptyList() else undone(state, event, now)
-        val (replaced, again) = scan(state, event.code, n, event.ticked, now)
-        _ui.update { ui -> ui.copy(scans = ui.scans.map { if (it.id == event.id) replaced else it }) }
-        takeBack + Observation.CodeLinked(now, event.code, n) + again
+        if (n.isEmpty()) return
+        var now = 0L
+        inSteps(
+            { state ->
+                now = clock()
+                val takeBack = if (state.itemNamed(n) == event.item) emptyList() else undone(state, event, now)
+                takeBack + Observation.CodeLinked(now, event.code, n)
+            },
+            { state ->
+                val (replaced, again) = scan(state, event.code, n, event.ticked, now)
+                _ui.update { ui -> ui.copy(scans = ui.scans.map { if (it.id == event.id) replaced else it }) }
+                again
+            },
+        )
     }
 
     /** Takes back what [event] did, if it still stands: unticks what it ticked, removes what it added. */
@@ -198,10 +274,12 @@ class AppViewModel(
      * or with [tick] ticked as a tap would, added first if not on the list.
      * An item already on the list is not added twice (F1). One already
      * ticked records nothing: a second tick would move its final tick, and
-     * with it what the trip teaches (O49).
+     * with it what the trip teaches (O49). [name] is linked by now, so its
+     * item exists, and is known by its id rather than by the name, which a
+     * rename may have taken from it.
      */
     private fun scan(state: State, code: Barcode, name: String, tick: Boolean, now: Long): Pair<ScanEvent, List<Observation>> {
-        val key = ItemKey.of(name)
+        val key = state.itemNamed(name) ?: ItemKey.of(name)
         val entry = state.entries.firstOrNull { it.item == key }
         val add = Observation.Added(now, name, code = code)
         val tap = Observation.Ticked(now, key, code)
@@ -331,7 +409,7 @@ class AppViewModel(
     // --- Lifecycle ---
 
     /** A trip that idled out while the app was away ends now (tier 4 §7). */
-    fun onResume() = serially { if (_ui.value.fatal == null) record(emptyList()) }
+    fun onResume() = serially { if (_ui.value.fatal == null) settled() }
 
     fun messageShown(message: UiMessage) = _ui.update { if (it.message?.id == message.id) it.copy(message = null) else it }
 
@@ -339,11 +417,26 @@ class AppViewModel(
 
     // --- Internals ---
 
-    private fun act(make: (State) -> List<Observation>) = serially {
+    private fun act(make: (State) -> List<Observation>) = inSteps(make)
+
+    /**
+     * One thing the user did, made in [steps] and kept as one. Each step is
+     * made from the state the steps before it leave, so it can name an item
+     * by the id an earlier one gave or found: an id is not the name's to
+     * tell once names can change (tier 4 §4.1).
+     */
+    private fun inSteps(vararg steps: (State) -> List<Observation>) = serially {
         if (_ui.value.fatal != null) return@serially
         val trips = ArrayList<TripRecord>()
         val settled = settle(trips)
-        record(settled, make(book.state), trips)
+        val made = ArrayList<Observation>()
+        for (step in steps) {
+            for (action in step(book.state)) {
+                book.apply(action)?.let { trips += it }
+                made += action
+            }
+        }
+        keep(settled + made, trips)
     }
 
     /** Ends a trip that has idled out, as of when it did, before anything new is applied. */
@@ -353,16 +446,16 @@ class AppViewModel(
         return listOf(ended)
     }
 
-    private suspend fun record(extra: List<Observation>) {
+    /** Settles the clock and keeps whatever that did, deriving the view the first time even if it did nothing. */
+    private suspend fun settled() {
         val trips = ArrayList<TripRecord>()
-        record(settle(trips), extra, trips)
+        keep(settle(trips), trips)
     }
 
-    /** Applies [extra], keeps it with what settling [applied], then derives the new view. */
-    private suspend fun record(applied: List<Observation>, extra: List<Observation>, trips: MutableList<TripRecord>) {
-        if (applied.isEmpty() && extra.isEmpty() && _ui.value.state != null) return
-        for (action in extra) book.apply(action)?.let { trips += it }
-        kept.keep(book, applied + extra, trips)
+    /** Keeps [applied], already applied to the book, with the [trips] they ended, then derives the new view. */
+    private suspend fun keep(applied: List<Observation>, trips: List<TripRecord>) {
+        if (applied.isEmpty() && _ui.value.state != null) return
+        kept.keep(book, applied, trips)
         recompute()
     }
 
@@ -410,7 +503,8 @@ private class Journal(store: HistoryStore) : AbstractList<Observation>() {
     override fun get(index: Int): Observation = read[index]
 }
 
-private fun Observation.restamped(at: Long): Observation = when (this) {
-    is Observation.Added -> copy(at = at)
-    else -> this
-}
+/**
+ * The other item that calling [item] [name] would join it into, or null for
+ * a plain rename: a change of its own name's case or spacing is one (D10).
+ */
+fun State.joinedBy(item: ItemKey, name: String): ItemKey? = itemNamed(name)?.takeIf { it != item }

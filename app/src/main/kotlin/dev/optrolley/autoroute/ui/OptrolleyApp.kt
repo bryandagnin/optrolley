@@ -37,7 +37,7 @@ import dev.optrolley.autoroute.scan.Scanner
 import java.io.IOException
 import java.time.LocalDate
 
-enum class Screen { LIST, STORES, ROUTING, DEBUG }
+enum class Screen { LIST, STORES, ROUTING, LIBRARY, DEBUG }
 
 /** [scanner] is null where there is no camera; scanning is then not offered (O46). */
 @Composable
@@ -146,6 +146,7 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
                         vm = vm,
                         onBack = { screen = Screen.LIST },
                     )
+                    Screen.LIBRARY -> LibraryScreen(state = state, snackbar = snackbar, vm = vm, onBack = { screen = Screen.LIST })
                     Screen.DEBUG -> DebugScreen(onBack = { screen = Screen.LIST })
                 }
             }

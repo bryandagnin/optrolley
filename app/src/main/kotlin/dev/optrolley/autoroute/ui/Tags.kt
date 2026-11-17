@@ -4,6 +4,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import dev.optrolley.core.Barcode
 import dev.optrolley.core.ChainId
 import dev.optrolley.core.ItemKey
 import dev.optrolley.core.SectionKind
@@ -22,6 +23,7 @@ object Tags {
     const val OVERFLOW = "overflow"
     const val MENU_STORES = "menu-stores"
     const val MENU_ROUTING = "menu-routing"
+    const val MENU_LIBRARY = "menu-library"
     const val MENU_EXPORT = "menu-export"
     const val MENU_IMPORT = "menu-import"
     const val MENU_DEBUG = "menu-debug"
@@ -86,6 +88,18 @@ object Tags {
 
     fun router(id: String) = "router:$id"
     fun lab(id: String) = "lab:$id"
+
+    const val LIBRARY = "library"
+    const val LIBRARY_EMPTY = "library-empty"
+    fun libraryItem(item: ItemKey) = "library-item:${item.value}"
+    fun libraryRename(item: ItemKey) = "library-rename:${item.value}"
+    fun libraryCode(code: Barcode) = "library-code:${code.value}"
+    fun libraryUnlink(code: Barcode) = "library-unlink:${code.value}"
+    const val RENAME_NAME = "rename-name"
+    const val RENAME_SAVE = "rename-save"
+    const val RENAME_CANCEL = "rename-cancel"
+    const val JOIN_CONFIRM = "join-confirm"
+    const val JOIN_CANCEL = "join-cancel"
 }
 
 /**

@@ -35,6 +35,7 @@
     <string name="add_a_store">Add a store…</string>
     <string name="manage_stores">Manage stores…</string>
     <string name="routing_method_and_lab">Routing method and lab</string>
+    <string name="items_and_barcodes">Items and barcodes</string>
     <string name="export_history">Export history…</string>
     <string name="import_history">Import history…</string>
 
@@ -78,6 +79,19 @@
     <string name="new_barcode">New barcode</string>
     <string name="what_is_this_code">What is this code?</string>
     <string name="naming_hint">Name it as you would write it on the list. Brands that will do instead of each other can share one name.</string>
+
+    <!-- Items: renaming, joining, and the library -->
+    <string name="items">Items</string>
+    <string name="library_hint">Everything you have added or scanned, with the barcodes that mean it. A new name changes the item everywhere and keeps what was learned of it.</string>
+    <string name="library_empty">Nothing yet. Items you add or scan are listed here.</string>
+    <string name="rename">Rename</string>
+    <string name="rename_item">Rename item</string>
+    <string name="rename_named">Rename %1$s</string>
+    <string name="unlink">Unlink</string>
+    <string name="unlink_code">Unlink %1$s</string>
+    <string name="join_title">Make these one item?</string>
+    <string name="join_message">“%1$s” and “%2$s” will become one item, called “%3$s”, with what was learned of both. Renaming it back will not part them again.</string>
+    <string name="join">Make one</string>
 
     <!-- Routing method and lab -->
     <string name="routing">Routing</string>

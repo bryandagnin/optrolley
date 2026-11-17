@@ -89,6 +89,7 @@ import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
 import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.ScanEvent
+import dev.optrolley.autoroute.joinedBy
 import dev.optrolley.autoroute.scan.Scanner
 import dev.optrolley.core.Barcode
 import dev.optrolley.core.Confidence
@@ -258,16 +259,40 @@ fun ListScreen(
     }
 
     editing?.let { entry ->
+        // A name that is another item's joins the two, which renaming back
+        // cannot part, so it is asked about first; cancelling returns to the edit.
+        var joining by remember(entry.item) { mutableStateOf<Edit?>(null) }
         EditDialog(
             entry = entry,
             onDismiss = { editing = null },
             onSave = { name, quantity, note ->
-                vm.edit(entry.item, name, quantity, note)
-                editing = null
+                val other = state.joinedBy(entry.item, name)
+                if (other == null) {
+                    vm.edit(entry.item, name, quantity, note)
+                    editing = null
+                } else {
+                    joining = Edit(name, quantity, note, state.items[other].orEmpty())
+                }
             },
         )
+        joining?.let { edit ->
+            JoinDialog(
+                renamed = entry.name,
+                other = edit.other,
+                name = edit.name.trim(),
+                onDismiss = { joining = null },
+                onConfirm = {
+                    vm.edit(entry.item, edit.name, edit.quantity, edit.note)
+                    joining = null
+                    editing = null
+                },
+            )
+        }
     }
 }
+
+/** An entry's edit held while a join is asked about; [other] is the name of the item it would join. */
+private data class Edit(val name: String, val quantity: String, val note: String, val other: String)
 
 private fun headerKey(kind: SectionKind) = "h:${kind.name}"
 
@@ -357,6 +382,11 @@ private fun Overflow(onOpen: (Screen) -> Unit, onExport: () -> Unit, onImport: (
                 text = { Text(stringResource(R.string.routing_method_and_lab)) },
                 onClick = { open = false; onOpen(Screen.ROUTING) },
                 modifier = Modifier.testTag(Tags.MENU_ROUTING),
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.items_and_barcodes)) },
+                onClick = { open = false; onOpen(Screen.LIBRARY) },
+                modifier = Modifier.testTag(Tags.MENU_LIBRARY),
             )
             HorizontalDivider()
             DropdownMenuItem(

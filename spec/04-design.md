@@ -496,9 +496,8 @@ suggests.
 Each step ends with the whole suite run; the oracle tests the first build
 passed keep passing throughout, unless tier 3 restated them.
 
-**The code has reached step 4.** Steps 5 and 6 remain, and with them the
-app's own way to rename an item: until step 5 the actions exist and nothing
-on screen records them.
+**The code has reached step 5.** Step 6 remains: the library shows a
+code's number and nothing more, and the app holds no network permission.
 
 1. **The step function.** `apply`, `Record`, state that can be stored, with
    `replay` and `present` as the fold of it (P1). No behaviour changes.
