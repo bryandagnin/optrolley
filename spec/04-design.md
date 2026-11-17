@@ -449,7 +449,7 @@ suggests.
   the app and so set at build time, outside the repository
   (`optrolley.contact`); no more than 15 product reads a
   minute from one address, on pain of a ban, so look-ups are made one at a
-  time and spaced at least five seconds apart; and its data is under the
+  time and spaced ten seconds apart; and its data is under the
   Open Database License with pictures under CC BY-SA, so the library says
   where they came from. Whether it knows this country's products is still
   untested.
@@ -465,7 +465,7 @@ suggests.
   itself; asking by hand asks again.
 - **One queue, paced by the app.** Every look-up, asked for or automatic,
   joins one queue that sends one request at a time, the next no sooner than
-  five seconds after the last began: twelve a minute against the fifteen
+  ten seconds after the last began: six a minute against the fifteen
   allowed. A code already waiting is not queued twice. The catalogue saying
   to slow down (429 or 503), or two failures running, stops the queue until
   the user next asks or the app is next opened; what was waiting is
