@@ -42,6 +42,11 @@ Open and deferred questions sit outside the tiers in
 [`spec/open-questions.md`](./spec/open-questions.md). Answered ones graduate
 into the tier 1 decisions table.
 
+What the build gets wrong, or does unchecked, is in
+[`spec/known-issues.md`](./spec/known-issues.md). When you find a defect you
+are not fixing now, or ship something nobody has looked at on a phone, add
+it there; take an entry out when it is fixed or checked.
+
 **The field trial is under way** on the owner's phone, alongside the second
 build. Its findings may send changes back up the tiers; tier 1 was drafted
 from a one-line brief, so expect it to be corrected by real use, as it has
@@ -105,6 +110,7 @@ have read that file. Ordered; the lower number wins a conflict.
 AGENTS.md                 this file
 spec/                     the tiers, in order
 spec/open-questions.md    live register, outside the tiers
+spec/known-issues.md      defects and unchecked behaviour, outside the tiers
 core/                     (planned) Kotlin/JVM: model, presentation, router, simulator
 app/                      (planned) Android: UI, storage, export
 design/logo/              candidate logos, as SVG sources
