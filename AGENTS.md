@@ -123,6 +123,11 @@ compose.yaml              build and emulator services
   they live in the image in `docker/`, run through `compose.yaml`
   (`spec/04-design.md` §2). The host has only Docker and `adb`. Record any
   host binary in `~/.tool-paths`.
+- **Run builds detached from input, into a log.** `docker compose run
+  --rm build ./gradlew <tasks> > build.log 2>&1 < /dev/null; echo
+  exit=$?`, then grep the log (`^e: `, ` FAILED$`, `BUILD`, `tests
+  completed`). A build that can read stdin can wait on it forever with no
+  output; one piped through `tail` shows nothing until it ends.
 - **Building in parallel** (several agents or worktrees at once): give each
   its own Gradle cache, `GRADLE_CACHE_VOLUME=optrolley-gradle-<name> docker
   compose run --rm build …`, or take turns. One shared cache makes
