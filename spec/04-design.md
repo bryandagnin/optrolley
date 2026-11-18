@@ -457,16 +457,19 @@ suggests.
   code: the answer, or that there was none, and when. Android may clear it;
   so may the user. It is not state, not in the export (O47), and nothing
   reads it but this screen (O60).
-- **Agreement, in place of a permission.** `INTERNET` is a permission
+- **An option, in place of a permission.** `INTERNET` is a permission
   Android grants at install and an app cannot ask for at run time, so the
-  run-time question is the app's own (F13, O63): a dialog at the first
-  look-up asked for, naming Open Food Facts, what is sent and the licence of
-  what comes back, with Agree and Not now. The answer is a device setting
-  kept with the cache, not state: it is not in the export, and a fresh
-  install asks again. The library has a switch to withdraw it, and a
-  button to clear what was fetched. A scan in Add mode before agreement
-  asks nothing and looks nothing up; the question comes only from a look-up
-  asked for by hand.
+  run-time say is the app's own (F13, F14, O63): an option on a Settings
+  screen, off until turned on, whose text names Open Food Facts, what is
+  sent and the licence of what comes back. Settings is its own screen from
+  the overflow menu, in every build: the debug screen is in debug builds
+  only, which would leave a release build no way to turn it on. Each option
+  is a row with its name on the left, a switch on the right and its
+  sentences below. The option is a device setting kept with the cache, not
+  state: it is not in the export, and a fresh install starts with it off.
+  While it is off the library shows numbers and no look-up controls, and a
+  scan in Add mode looks nothing up. The library's button to clear what was
+  fetched is shown whenever anything has been.
 - **When a code is looked up** (F13). By hand in the library: one code, or
   every code the cache holds nothing for. By itself when a code is scanned
   in Add mode, named for the first time or not, and the cache holds nothing

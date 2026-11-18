@@ -203,16 +203,22 @@ shop.
   can be, one after another. A code scanned to add something, at home, is
   looked up by itself if it never has been. A code scanned to tick, in the
   shop, is not. Nothing waits for an answer.
-- **Nothing is looked up until the user agrees to it.** The first time a
-  look-up is asked for, the app says what will be sent (a code's number)
-  and to whom, and asks. Until the user agrees nothing is sent, and the
-  library shows numbers. The agreement can be withdrawn at any time; from
-  then on nothing is sent, and what was already fetched stays on the phone
-  until the user clears it.
+- **Nothing is looked up until the user turns it on**, in Settings, where
+  the option says what will be sent (a code's number) and to whom. While it
+  is off nothing is sent, the library shows numbers, and nothing that would
+  look a code up is offered. Turning it off again stops all sending; what
+  was already fetched stays on the phone until the user clears it.
 - A product's name is never used as an item's name, and is never shown on
   the list (D14).
 
-## 14. Store detection (F10) — later
+## 14. Settings (F14)
+
+A screen of options, each with its name, a switch, and two or three
+sentences beneath saying what turning it on does. Reached from the menu.
+Whatever an option enables is hidden while it is off, not shown disabled.
+The first option is looking codes up (F13).
+
+## 15. Store detection (F10) — later
 
 - With location permission, the app suggests the nearest known store when
   opened.
@@ -222,7 +228,7 @@ shop.
 
 Not part of the first build. Staging is in open questions H1.
 
-## 15. Out of scope for this tier
+## 16. Out of scope for this tier
 
 Everything tier 1 §3 excludes, plus: multiple lists (D9), shared lists (H4),
 manual drag-to-reorder as a teaching signal (H5), and any presentation of
