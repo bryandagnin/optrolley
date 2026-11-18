@@ -203,6 +203,12 @@ shop.
   can be, one after another. A code scanned to add something, at home, is
   looked up by itself if it never has been. A code scanned to tick, in the
   shop, is not. Nothing waits for an answer.
+- **Nothing is looked up until the user agrees to it.** The first time a
+  look-up is asked for, the app says what will be sent (a code's number)
+  and to whom, and asks. Until the user agrees nothing is sent, and the
+  library shows numbers. The agreement can be withdrawn at any time; from
+  then on nothing is sent, and what was already fetched stays on the phone
+  until the user clears it.
 - A product's name is never used as an item's name, and is never shown on
   the list (D14).
 

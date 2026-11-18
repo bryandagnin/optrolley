@@ -1,7 +1,7 @@
 # Tier 3 — Predicates and Oracles
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-18
 
 ---
 
@@ -179,6 +179,9 @@ Derived from T6.
 - **O61 — Only the code is sent.** The one thing the app sends anywhere is
   the number of a code, to look it up. Never the list, an item's name, a
   store or a trip.
+- **O63 — Nothing is sent without agreement.** Until the user has agreed to
+  look-ups, and after they withdraw it, the app sends nothing at all,
+  whatever is scanned or opened.
 
 ## G. From the independent re-derivation
 

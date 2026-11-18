@@ -1,7 +1,7 @@
 # Tier 5 — Test Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-18
 
 ---
 
@@ -60,6 +60,7 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 | O24 | instrumented | Tier 2 walkthrough with radios off; the library shows numbers. |
 | O60 | unit + property | The same actions with a catalogue that answers, one that fails and one that never returns: identical state, record and presentations. |
 | O61 | unit | A recording stand-in for the network: every request the app makes is for one code's number and carries nothing else of the user's. |
+| O63 | unit + instrumented | The same stand-in: before agreement, after Not now, and after withdrawal, scanning to add and opening the library record no request; after Agree, they do. |
 | O55–O58 | unit + property | Rename an item anywhere in a generated sequence of actions: every presentation and confidence unchanged, its codes still add it; the old name then starts cold. Join two items: trips, statements and codes of both count, the entries merge by the rule. Unlink: the code is as never linked, nothing else differs. Written from tier 3 before the code, by an agent that has not seen it. |
 | O41–O45 | unit + property | A scan of a linked code against typing the name; links inserted anywhere move nothing; links survive rebuild and export. Also at the view model, scanning against typing over the same history. |
 | O46 | instrumented | With the camera refused, the scanner does not open and the list still works. |
