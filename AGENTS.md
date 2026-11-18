@@ -13,9 +13,8 @@ particular shops or chains.
 
 "Optrolley" is **opt**imal trolley.
 
-**The first build exists** and is awaiting its field trial (tier 4 §9,
-step 9). It ships every router candidate side by side (D12) so real trips
-choose between them.
+**The second build exists** and is in the owner's field trial. It ships
+every router candidate side by side (D12) so real trips choose between them.
 
 ## Tiered spec-driven workflow
 
@@ -30,13 +29,12 @@ turns out to be wrong, say so explicitly and get agreement before changing it.
 | 3. Predicates & oracles | `spec/03-oracles.md` | **frozen**, as restated for the second build |
 | 4. Low-level design / plan | `spec/04-design.md` | design — second build |
 | 5. Test plan | `spec/05-tests.md` | in force |
-| 6. Implementation | `core/`, `app/` | **first build: behind the spec** |
+| 6. Implementation | `core/`, `app/` | second build |
 
-**The code is behind the spec.** The owner changed what an item is, what
-the record is and what the network may be used for. Tiers 1 to 5 describe
-the second build; the code is still the first, which replays everything
-from the action log and knows an item by its name. Tier 4 §10 is the order
-the second is built in, and says which step the code has reached.
+**The second build** keeps the app's state and the record of trips, and
+knows an item by an id that outlives its name; the action log is a journal
+it writes and does not read (tier 4 §4, §7). Tier 4 §10 is the order it
+was built in.
 
 Open and deferred questions sit outside the tiers in
 [`spec/open-questions.md`](./spec/open-questions.md). Answered ones graduate
@@ -111,16 +109,13 @@ AGENTS.md                 this file
 spec/                     the tiers, in order
 spec/open-questions.md    live register, outside the tiers
 spec/known-issues.md      defects and unchecked behaviour, outside the tiers
-core/                     (planned) Kotlin/JVM: model, presentation, router, simulator
-app/                      (planned) Android: UI, storage, export
+core/                     Kotlin/JVM: model, presentation, router, simulator
+app/                      Android: UI, storage, export, scanning, look-ups
 design/logo/              candidate logos, as SVG sources
 docker/                   the build image: JDK + Android SDK
 compose.yaml              build and emulator services
 ```
 
-`core/` and `app/` do not exist yet. They are created with the Gradle project
-at build step 1, from then-current versions, so that nothing unbuildable is
-committed in the meantime.
 
 ## Conventions
 
@@ -157,5 +152,6 @@ committed in the meantime.
 
 No completion claims without fresh evidence. Before stating that tests pass
 or the app builds, run the command in that same message and quote the output.
-"Should work" is not evidence. Until the toolchain exists, nothing here can
-be claimed to build or pass at all.
+"Should work" is not evidence. `:core:test` has four expected failures, the routing methods that
+do not meet O14, O17 and O18 (first-seen; precedence on O18); any other is
+a regression.

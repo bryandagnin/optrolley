@@ -93,6 +93,21 @@
     <string name="join_message">“%1$s” and “%2$s” will become one item, called “%3$s”, with what was learned of both. Renaming it back will not part them again.</string>
     <string name="join">Make one</string>
 
+    <!-- The library's look-ups (F13) -->
+    <string name="look_up">Look up</string>
+    <string name="look_up_all">Look up all not yet looked up (%1$d)</string>
+    <string name="looking_up">Looking up %1$d of %2$d</string>
+    <string name="look_ups_stopped">Look-ups stopped: the catalogue is busy or out of reach. Ask again later.</string>
+    <string name="clear_fetched">Clear what was fetched</string>
+    <string name="catalogue_source">Product names and pictures from Open Food Facts (openfoodfacts.org): data under the Open Database License, pictures under CC BY-SA.</string>
+    <string name="product_and_brand">%1$s · %2$s</string>
+    <string name="product_picture">Picture of %1$s</string>
+
+    <!-- Settings (F14) -->
+    <string name="settings">Settings</string>
+    <string name="setting_look_ups">Look up barcodes</string>
+    <string name="setting_look_ups_description">Shows each barcode’s product name and picture in Items and barcodes. Only the barcode’s number is sent, to Open Food Facts (openfoodfacts.org); nothing from your list, items, stores or trips is. What comes back is under the Open Database License, with pictures under CC BY-SA, and is kept on this phone.</string>
+
     <!-- Routing method and lab -->
     <string name="routing">Routing</string>
     <string name="method">Method</string>

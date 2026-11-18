@@ -2,6 +2,10 @@ package dev.optrolley.autoroute
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.optrolley.autoroute.catalogue.Catalogue
+import dev.optrolley.autoroute.catalogue.CatalogueCache
+import dev.optrolley.autoroute.catalogue.LibraryView
+import dev.optrolley.autoroute.catalogue.Lookups
 import dev.optrolley.core.Backup
 import dev.optrolley.core.Barcode
 import dev.optrolley.core.Book
@@ -22,6 +26,7 @@ import dev.optrolley.core.itemNamed
 import dev.optrolley.core.nameFor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -30,6 +35,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 import java.util.UUID
 
@@ -86,6 +92,11 @@ class AppViewModel(
     private val io: CoroutineDispatcher = Dispatchers.IO,
     private val compute: CoroutineDispatcher = Dispatchers.Default,
     private val routers: Routers = Routers.all,
+    catalogue: Catalogue = Catalogue.Offline,
+    /** Where the catalogue's answers, and whether looking codes up is on, are kept; in memory only if null. */
+    catalogueCache: File? = null,
+    /** Waits between look-ups; the clock says how long. */
+    pause: suspend (Long) -> Unit = { delay(it) },
 ) : ViewModel() {
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
@@ -93,6 +104,12 @@ class AppViewModel(
     private val lock = Mutex()
     private val kept = Kept(store)
     private var book = Book()
+
+    // Apart from the state on purpose: nothing but the library reads what it fetches (O60).
+    private val lookups = Lookups(catalogue, CatalogueCache(catalogueCache), viewModelScope, io, clock, pause)
+
+    /** What the library shows of the catalogue (F13). */
+    val library: StateFlow<LibraryView> = lookups.view
 
     init {
         serially {
@@ -200,6 +217,19 @@ class AppViewModel(
         listOf(Observation.CodeUnlinked(clock(), code))
     }
 
+    /** Looks [code] up, even if the catalogue did not know it before; nothing while the option is off (O63). */
+    fun lookUp(code: Barcode) = lookups.lookUp(code)
+
+    /** Looks up every linked code the cache holds nothing for; nothing while the option is off. */
+    fun lookUpAll() = lookups.lookUpAll(_ui.value.state?.codes?.keys.orEmpty())
+
+    fun clearFetched() = lookups.clear()
+
+    // --- Settings (F14) ---
+
+    /** Looking codes up, on or off: a device setting, not an action, so nothing is recorded. */
+    fun setLookUps(on: Boolean) = lookups.setEnabled(on)
+
     // --- Scanning (F12) ---
 
     /**
@@ -210,15 +240,22 @@ class AppViewModel(
      *
      * With [tick], a linked code ticks its entry instead, or adds and ticks
      * it if it is not on the list; one already ticked is left as it is.
+     *
+     * Scanned to add, a linked code may then be looked up (F13).
      */
-    fun scanned(code: Barcode, tick: Boolean = false) = act { state ->
-        val name = state.nameFor(code)
-        if (name == null) {
-            // One code is named at a time; another read meanwhile is let go.
-            _ui.update { if (it.naming == null) it.copy(naming = code) else it }
-            return@act emptyList()
+    fun scanned(code: Barcode, tick: Boolean = false) {
+        var handled = false
+        act { state ->
+            val name = state.nameFor(code)
+            if (name == null) {
+                // One code is named at a time; another read meanwhile is let go.
+                _ui.update { if (it.naming == null) it.copy(naming = code) else it }
+                return@act emptyList()
+            }
+            handled = true
+            logged(scan(state, code, name, tick, clock()))
         }
-        logged(scan(state, code, name, tick, clock()))
+        if (!tick) afterwards { if (handled) lookups.scannedToAdd(code) }
     }
 
     /** Links [code] to the item [name] matches, then adds (or with [tick], ticks) that item as a scan of [code] would. */
@@ -226,6 +263,7 @@ class AppViewModel(
         val n = name.trim()
         if (n.isEmpty()) return
         var now = 0L
+        var handled = false
         inSteps(
             {
                 now = clock()
@@ -233,8 +271,12 @@ class AppViewModel(
                 listOf(Observation.CodeLinked(now, code, n))
             },
             // Scanned once linked, so the item the link names, made or found, is known by its id.
-            { state -> logged(scan(state, code, n, tick, now)) },
+            { state ->
+                handled = true
+                logged(scan(state, code, n, tick, now))
+            },
         )
+        if (!tick) afterwards { if (handled) lookups.scannedToAdd(code) }
     }
 
     /** The user declined to name the code in [UiState.naming]; nothing is recorded. */
@@ -408,8 +450,14 @@ class AppViewModel(
 
     // --- Lifecycle ---
 
-    /** A trip that idled out while the app was away ends now (tier 4 §7). */
-    fun onResume() = serially { if (_ui.value.fatal == null) settled() }
+    /**
+     * A trip that idled out while the app was away ends now (tier 4 §7). Look-ups
+     * stopped by the catalogue may run again by themselves once the app is opened again.
+     */
+    fun onResume() {
+        lookups.opened()
+        serially { if (_ui.value.fatal == null) settled() }
+    }
 
     fun messageShown(message: UiMessage) = _ui.update { if (it.message?.id == message.id) it.copy(message = null) else it }
 
@@ -465,6 +513,9 @@ class AppViewModel(
     }
 
     private fun say(text: String) = _ui.update { it.copy(message = UiMessage(text)) }
+
+    /** Runs [block] once everything asked for before it has been kept, without holding up anything after it. */
+    private fun afterwards(block: () -> Unit) = serially { block() }
 
     private fun serially(block: suspend () -> Unit) {
         viewModelScope.launch {

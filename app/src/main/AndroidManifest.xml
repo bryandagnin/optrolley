@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The camera and nothing else (D15, O46): no network permission (O23).
-     CAMERA is asked for at the first scan; the camera is an optional feature
-     so a phone without one still installs the app. androidx.core declares a
-     permission of its own for ContextCompat.registerReceiver, which nothing
+<!-- The camera and the internet, and nothing else (D15, O23). CAMERA is
+     asked for at the first scan; the camera is an optional feature so a phone
+     without one still installs the app. INTERNET is only for the library's
+     look-ups, which are off until turned on in Settings (O63); Android grants
+     it at install and has no run-time question for it. androidx.core declares
+     a permission of its own for ContextCompat.registerReceiver, which nothing
      here uses; it is removed. -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
   xmlns:tools="http://schemas.android.com/tools">
 
   <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.INTERNET" />
   <uses-feature
     android:name="android.hardware.camera.any"
     android:required="false" />

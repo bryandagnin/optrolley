@@ -399,6 +399,13 @@ private fun Overflow(onOpen: (Screen) -> Unit, onExport: () -> Unit, onImport: (
                 onClick = { open = false; onImport() },
                 modifier = Modifier.testTag(Tags.MENU_IMPORT),
             )
+            HorizontalDivider()
+            // In every build: the option to look codes up has nowhere else to be turned on.
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.settings)) },
+                onClick = { open = false; onOpen(Screen.SETTINGS) },
+                modifier = Modifier.testTag(Tags.MENU_SETTINGS),
+            )
             if (LocalContext.current.isDebuggable()) {
                 HorizontalDivider()
                 DropdownMenuItem(

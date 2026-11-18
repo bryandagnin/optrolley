@@ -65,6 +65,14 @@ and the values chosen for it (0.7 of the side, two readings within 0.7 s,
 loop. The owner has scanned a trip with them; whether they are right has
 not been reported either way.
 
+### K10. Look-ups and the Settings screen
+
+Built and tested off the device only, against a stand-in for the network:
+no request has been made to Open Food Facts from the app, so its agent
+string, a real 404, 429 or timeout, and the pictures decoding on a phone
+are unchecked, as is how the library looks with names and pictures beside
+57 codes.
+
 ## Not judged by any oracle
 
 These are behaviours the code has and the tests written from tier 3 do not

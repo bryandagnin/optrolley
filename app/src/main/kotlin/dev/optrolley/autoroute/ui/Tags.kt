@@ -26,6 +26,7 @@ object Tags {
     const val MENU_LIBRARY = "menu-library"
     const val MENU_EXPORT = "menu-export"
     const val MENU_IMPORT = "menu-import"
+    const val MENU_SETTINGS = "menu-settings"
     const val MENU_DEBUG = "menu-debug"
     const val DEBUG_BENCH_RUN = "debug-bench-run"
     const val DEBUG_BENCH_OUT = "debug-bench-out"
@@ -95,11 +96,22 @@ object Tags {
     fun libraryRename(item: ItemKey) = "library-rename:${item.value}"
     fun libraryCode(code: Barcode) = "library-code:${code.value}"
     fun libraryUnlink(code: Barcode) = "library-unlink:${code.value}"
+    fun libraryLookUp(code: Barcode) = "library-look-up:${code.value}"
+    fun libraryProduct(code: Barcode) = "library-product:${code.value}"
+    fun libraryPicture(code: Barcode) = "library-picture:${code.value}"
+    const val LIBRARY_LOOK_UP_ALL = "library-look-up-all"
+    const val LIBRARY_PROGRESS = "library-progress"
+    const val LIBRARY_STOPPED = "library-stopped"
+    const val LIBRARY_CLEAR = "library-clear"
+    const val LIBRARY_SOURCE = "library-source"
     const val RENAME_NAME = "rename-name"
     const val RENAME_SAVE = "rename-save"
     const val RENAME_CANCEL = "rename-cancel"
     const val JOIN_CONFIRM = "join-confirm"
     const val JOIN_CANCEL = "join-cancel"
+
+    const val SETTINGS = "settings"
+    const val SETTING_LOOK_UPS = "setting-look-ups"
 }
 
 /**

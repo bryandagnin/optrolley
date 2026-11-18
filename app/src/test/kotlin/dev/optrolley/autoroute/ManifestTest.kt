@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
  *
  * On a built APK the same check is:
  * `aapt2 dump permissions app/build/outputs/apk/debug/app-debug.apk`,
- * which must list CAMERA and nothing else.
+ * which must list CAMERA and INTERNET and nothing else.
  */
 class ManifestTest {
     /** Passed in by app/build.gradle.kts; not the unit-test manifest, which test libraries add to. */
@@ -31,13 +31,16 @@ class ManifestTest {
 
     private fun Element.name() = getAttribute("android:name")
 
-    /** Was "no permission at all"; scanning (D15) brought the camera, with the owner's agreement. */
+    /**
+     * Was "no permission at all"; scanning (D15) brought the camera and the
+     * library's look-ups (D20) the internet, each with the owner's agreement.
+     */
     @Test
-    fun `the package requests the camera and no other permission`() {
+    fun `the package requests the camera and the internet and no other permission`() {
         val requested = listOf("uses-permission", "uses-permission-sdk-23", "uses-permission-sdk-m")
             .flatMap(::elements)
             .map { it.name() }
-        assertEquals(listOf("android.permission.CAMERA"), requested, "from $manifest")
+        assertEquals(listOf("android.permission.CAMERA", "android.permission.INTERNET"), requested.sorted(), "from $manifest")
     }
 
     @Test
@@ -47,10 +50,10 @@ class ManifestTest {
         assertTrue(cameras.all { it.getAttribute("android:required") == "false" }, "from $manifest")
     }
 
+    /** The internet is held for look-ups only; nothing needs to know what the network is doing. */
     @Test
-    fun `nothing can reach the network`() {
-        val network = setOf("android.permission.INTERNET", "android.permission.ACCESS_NETWORK_STATE")
-        assertTrue(elements("uses-permission").none { it.name() in network })
+    fun `no permission beyond the internet reaches the network`() {
+        assertTrue(elements("uses-permission").none { it.name() == "android.permission.ACCESS_NETWORK_STATE" }, "from $manifest")
     }
 
     @Test

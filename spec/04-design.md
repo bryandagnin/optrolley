@@ -525,8 +525,7 @@ suggests.
 Each step ends with the whole suite run; the oracle tests the first build
 passed keep passing throughout, unless tier 3 restated them.
 
-**The code has reached step 5.** Step 6 remains: the library shows a
-code's number and nothing more, and the app holds no network permission.
+**The code has reached step 6**: the second build is complete.
 
 1. **The step function.** `apply`, `Record`, state that can be stored, with
    `replay` and `present` as the fold of it (P1). No behaviour changes.

@@ -1,11 +1,14 @@
 package dev.optrolley.autoroute.ui
 
+import android.graphics.BitmapFactory
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
@@ -19,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -34,21 +38,30 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.optrolley.autoroute.AppViewModel
 import dev.optrolley.autoroute.R
+import dev.optrolley.autoroute.catalogue.Known
+import dev.optrolley.autoroute.catalogue.LibraryView
 import dev.optrolley.autoroute.joinedBy
 import dev.optrolley.core.Barcode
 import dev.optrolley.core.ItemKey
 import dev.optrolley.core.State
+import java.io.File
 
 /**
  * F13: every item, with the codes that mean it, to rename one or unlink a
- * code. Used at home and rarely, so it is a plain list and asks for nothing.
+ * code. Used at home and rarely, so it is a plain list. Each code shows what
+ * the catalogue said of it; nothing else in the app reads that (O60, D14).
+ * While looking codes up is off in Settings, nothing here would send
+ * anything: those controls are hidden, not disabled (F14).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,9 +71,11 @@ fun LibraryScreen(
     vm: AppViewModel,
     onBack: () -> Unit,
 ) {
+    val library by vm.library.collectAsStateWithLifecycle()
     var renaming by remember { mutableStateOf<ItemKey?>(null) }
     val items = remember(state.items) { state.items.entries.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.value }) }
     val codes = remember(state.codes) { state.codes.entries.groupBy({ it.value }, { it.key }).mapValues { (_, c) -> c.sortedBy { it.value } } }
+    val fetched = library.known.isNotEmpty() || library.pictures.isNotEmpty()
 
     Scaffold(
         topBar = {
@@ -89,12 +104,20 @@ fun LibraryScreen(
                         .then(if (items.isEmpty()) Modifier.testTag(Tags.LIBRARY_EMPTY) else Modifier),
                 )
             }
+            if ((library.enabled && state.codes.isNotEmpty()) || fetched) {
+                item {
+                    LookUps(library = library, fetched = fetched, unasked = state.codes.keys.count { it !in library.known }, vm = vm)
+                    HorizontalDivider()
+                }
+            }
             items(items, key = { it.key.value }) { (item, name) ->
                 LibraryItem(
                     item = item,
                     name = name,
                     codes = codes[item].orEmpty(),
+                    library = library,
                     onRename = { renaming = item },
+                    onLookUp = vm::lookUp,
                     onUnlink = vm::unlink,
                 )
                 HorizontalDivider()
@@ -118,12 +141,59 @@ fun LibraryScreen(
     }
 }
 
+/**
+ * Asking the catalogue about everything at once and how far it has got,
+ * while the option is on; clearing what it sent, whenever it has sent
+ * anything; and where that came from.
+ */
+@Composable
+private fun LookUps(library: LibraryView, fetched: Boolean, unasked: Int, vm: AppViewModel) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp)) {
+        if (library.enabled) {
+            OutlinedButton(
+                onClick = vm::lookUpAll,
+                enabled = unasked > 0,
+                modifier = Modifier.fillMaxWidth().testTag(Tags.LIBRARY_LOOK_UP_ALL),
+            ) { Text(stringResource(R.string.look_up_all, unasked)) }
+            library.progress?.let { (done, of) ->
+                Text(
+                    stringResource(R.string.looking_up, (done + 1).coerceAtMost(of), of),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(vertical = 4.dp).testTag(Tags.LIBRARY_PROGRESS),
+                )
+            }
+            if (library.stopped) {
+                Text(
+                    stringResource(R.string.look_ups_stopped),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(vertical = 4.dp).testTag(Tags.LIBRARY_STOPPED),
+                )
+            }
+        }
+        if (fetched) {
+            TextButton(onClick = vm::clearFetched, modifier = Modifier.testTag(Tags.LIBRARY_CLEAR)) {
+                Text(stringResource(R.string.clear_fetched))
+            }
+        }
+        // The catalogue's licences ask that what is shown from it says where it came from.
+        Text(
+            stringResource(R.string.catalogue_source),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(vertical = 8.dp).testTag(Tags.LIBRARY_SOURCE),
+        )
+    }
+}
+
 @Composable
 private fun LibraryItem(
     item: ItemKey,
     name: String,
     codes: List<Barcode>,
+    library: LibraryView,
     onRename: () -> Unit,
+    onLookUp: (Barcode) -> Unit,
     onUnlink: (Barcode) -> Unit,
 ) {
     Column(Modifier.fillMaxWidth().testTag(Tags.libraryItem(item)).padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp)) {
@@ -134,21 +204,53 @@ private fun LibraryItem(
             }
         }
         for (code in codes) {
+            val product = (library.known[code] as? Known.Found)?.let { label(it) }
+            val picture = library.pictures[code]
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().testTag(Tags.libraryCode(code)),
             ) {
-                Text(
-                    code.value,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
+                picture?.let { Picture(it, code, product ?: code.value) }
+                Column(Modifier.weight(1f).padding(start = if (picture != null) 8.dp else 0.dp)) {
+                    if (product != null) {
+                        Text(product, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.testTag(Tags.libraryProduct(code)))
+                    }
+                    Text(
+                        code.value,
+                        style = if (product != null) MaterialTheme.typography.bodySmall else MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (library.enabled) {
+                    TextButton(onClick = { onLookUp(code) }, modifier = Modifier.testTag(Tags.libraryLookUp(code))) {
+                        Text(stringResource(R.string.look_up))
+                    }
+                }
                 TextButton(onClick = { onUnlink(code) }, modifier = Modifier.testTag(Tags.libraryUnlink(code))) {
                     Text(stringResource(R.string.unlink))
                 }
             }
         }
+    }
+}
+
+/** What the catalogue calls the product, to tell codes apart; never the item's name (D14). */
+@Composable
+private fun label(found: Known.Found): String? = when {
+    found.name != null && found.brand != null -> stringResource(R.string.product_and_brand, found.name, found.brand)
+    else -> found.name ?: found.brand
+}
+
+@Composable
+private fun Picture(file: File, code: Barcode, of: String) {
+    // The catalogue's small picture, 200 px across, so decoding it here costs little.
+    val bitmap: ImageBitmap? = remember(file, file.lastModified()) { BitmapFactory.decodeFile(file.path)?.asImageBitmap() }
+    if (bitmap != null) {
+        Image(
+            bitmap,
+            contentDescription = stringResource(R.string.product_picture, of),
+            modifier = Modifier.size(40.dp).testTag(Tags.libraryPicture(code)),
+        )
     }
 }
 
