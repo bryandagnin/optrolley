@@ -65,13 +65,13 @@ and the values chosen for it (0.7 of the side, two readings within 0.7 s,
 loop. The owner has scanned a trip with them; whether they are right has
 not been reported either way.
 
-### K10. Look-ups and the Settings screen
+### K10. Look-ups in bulk, and the queue stopping itself
 
-Built and tested off the device only, against a stand-in for the network:
-no request has been made to Open Food Facts from the app, so its agent
-string, a real 404, 429 or timeout, and the pictures decoding on a phone
-are unchecked, as is how the library looks with names and pictures beside
-57 codes.
+Single look-ups from the library work on the owner's phone against the
+real catalogue `[owner, 2026-11-18]`. Not yet seen there: "Look up all"
+over many codes (about 20 s per found code, so tens of minutes for the
+owner's library), its progress line, and the queue stopping on a 429 or
+503 or on two failures running, which only the stand-in has exercised.
 
 ## Not judged by any oracle
 
