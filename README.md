@@ -1,29 +1,44 @@
-# optrolley-autoroute
+# shh.op
 
 An Android shopping list that sorts itself into the order you walk the shop.
 
-It learns the route from the order you tick things off, per shop, with no
-setup. *Optrolley*: **opt**imal trolley.
+Solves\* the travelling-salesman problem.
 
-## Status
+Does not solve the trolley problem, besides a slight optimisation.
 
-First build: every router candidate ships, selectable, and the app scores
-each against your real trips. Barcodes you scan add the items you named
-them as. Awaiting a field trial.
+It learns the route from the order you tick things off, with no setup. *Optrolley*: **opt**imal trolley.
 
-| Tier | | State |
-|------|---|-------|
-| 1 | [Rationale and steering](./spec/01-rationale.md) | accepted for the first build |
-| 2 | [Functional spec](./spec/02-functional.md) | accepted for the first build |
-| 3 | [Predicates and oracles](./spec/03-oracles.md) | frozen |
-| 4 | [Design and plan](./spec/04-design.md) | outline |
-| 5 | [Test plan](./spec/05-tests.md) | outline |
-| 6 | Implementation | first build |
+## Pronunciation
 
-[Open questions](./spec/open-questions.md) lists the proposed expansions
-(geofencing, separate writing and shopping views) and what is deferred.
+```
+opticart: 'opt' as in "sausage"
+          'i'   as in "team"
+          'car' as in "cdr"
+          'r'   as in "Worcestershire"
+          't'   as in "ï»¿"
 
-Build and test in the container: `docker compose run --rm build ./gradlew test`
-(see [tier 4 §2](./spec/04-design.md)).
+IPA: /ËˆÉ’p.tÉª.kÉ‘Ët/
+```
 
-Contributors, human or otherwise, start with [`AGENTS.md`](./AGENTS.md).
+## Licence
+
+Use shh.op under whichever of these you like:
+
+- [MIT](LICENSE): the one your lawyers already know
+- [CC0](LICENSE-CC0): public domain, drafted by lawyers who meant it
+- [Unlicense](LICENSE-UNLICENSE): public domain, and OSI-approved
+
+If you're not sure which to pick, pick MIT. If you're sure you don't care, pick either of the others.
+
+(this isn't sanity advice, and I'm not sane)
+
+## Known side effects
+
+- Immunity to 'your mother will die' posts
+- Immunity to immunities
+- **Severe** death
+
+Do not operate shh.op while operating heavy machinery, or when shopping cart wheels are not **perfectly aligned**.
+
+---
+(c) aisle-be-back 1984-05-12 - 2026-11-19
