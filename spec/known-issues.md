@@ -73,6 +73,14 @@ over many codes (about 20 s per found code, so tens of minutes for the
 owner's library), its progress line, and the queue stopping on a 429 or
 503 or on two failures running, which only the stand-in has exercised.
 
+### K11. Buzzing on adding and on ticking
+
+Installed on the owner's phone, but not yet switched on or felt there.
+Unknown: whether each buzz is strong enough to notice through a hand or a
+glove, whether a tick and an untick feel different, and whether the phone's
+touch-vibration setting, which `haptic_feedback_enabled` reported as off,
+mutes them, along with the scan's buzz.
+
 ## Not judged by any oracle
 
 These are behaviours the code has and the tests written from tier 3 do not
