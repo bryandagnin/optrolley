@@ -45,6 +45,19 @@ build's code: 2.2 s at 130 trips, 7.4 s at 260 `[evidence: debug benchmark,
 *Fix:* store the scores with the state, or score in the background as each
 trip ends.
 
+### K12. Lint fails
+
+`:app:lintDebug` finds 3 errors, so a build that includes it fails. All
+three are `LocalContextGetResourceValueCall`: a string read through
+`LocalContext.current` (`DebugScreen.kt`, and the export and import file
+errors in `OptrolleyApp.kt`), which can be stale after a configuration
+change such as a language switch. Its 4 warnings are an old target SDK, a
+string that wants a plural, `allowBackup` without data-extraction rules and
+the unused `unlink_code` string.
+
+*Fix:* read the strings with `LocalResources.current` or `stringResource`
+up front, then decide whether lint belongs in the verification command.
+
 ## Not checked on a phone
 
 ### K4. The join question opens over another dialog
