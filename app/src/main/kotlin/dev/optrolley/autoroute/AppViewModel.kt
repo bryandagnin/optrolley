@@ -66,8 +66,8 @@ data class UiState(
 /** Which actions the phone buzzes for (F14). A scan buzzes regardless, as it is read (F12). */
 data class Buzzes(val onAdd: Boolean = false, val onTick: Boolean = false)
 
-/** An action to be felt as it is made. */
-enum class Buzz { ADDED, TICKED, UNTICKED }
+/** Something to be felt as it is done (D22). A scan buzzes as it is read; the rest only when the user turns them on. */
+enum class Buzz { SCANNED, ADDED, TICKED, UNTICKED }
 
 /**
  * A word to the user. [undo] makes what takes it back from the state when

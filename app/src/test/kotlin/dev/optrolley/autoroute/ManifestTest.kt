@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
  *
  * On a built APK the same check is:
  * `aapt2 dump permissions app/build/outputs/apk/debug/app-debug.apk`,
- * which must list CAMERA and INTERNET and nothing else.
+ * which must list CAMERA, INTERNET and VIBRATE and nothing else.
  */
 class ManifestTest {
     /** Passed in by app/build.gradle.kts; not the unit-test manifest, which test libraries add to. */
@@ -33,14 +33,15 @@ class ManifestTest {
 
     /**
      * Was "no permission at all"; scanning (D15) brought the camera and the
-     * library's look-ups (D20) the internet, each with the owner's agreement.
+     * library's look-ups (D20) the internet, and buzzes the phone's touch
+     * vibration would silence (D22) the vibrator, each with the owner's agreement.
      */
     @Test
-    fun `the package requests the camera and the internet and no other permission`() {
+    fun `the package requests the camera, the internet and the vibrator and no other permission`() {
         val requested = listOf("uses-permission", "uses-permission-sdk-23", "uses-permission-sdk-m")
             .flatMap(::elements)
             .map { it.name() }
-        assertEquals(listOf("android.permission.CAMERA", "android.permission.INTERNET"), requested.sorted(), "from $manifest")
+        assertEquals(listOf("android.permission.CAMERA", "android.permission.INTERNET", "android.permission.VIBRATE"), requested.sorted(), "from $manifest")
     }
 
     @Test

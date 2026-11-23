@@ -1,7 +1,7 @@
 # Tier 3 — Predicates and Oracles
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-18
+**Last updated:** 2026-11-23
 
 ---
 
@@ -29,6 +29,15 @@ T5, T6 and D10. The reasons, as the rule above asks:
 
 Nothing else is loosened. Where an oracle says "history" it means the
 record together with the app's current state.
+
+**Revised 2026-11-23, with the owner's agreement**, to follow tier 1's D22:
+
+- *O23* allowed the camera and the internet and no other permission. Without
+  `VIBRATE` an app can buzz only as touch feedback, which the phone's own
+  setting silences, and the owner keeps that off on purpose yet wants to
+  feel a scan, an add and a tick. `VIBRATE` is granted at install, reaches
+  nothing beyond the phone and says nothing about the user, so it costs
+  none of what O23 protects: no network beyond look-ups (O61), no location.
 
 **Hard and soft.** Every oracle except O13–O18 is hard: every build satisfies
 it. O13–O18 judge a routing method; the first build ships several methods side
@@ -166,8 +175,8 @@ Derived from T5.
 
 Derived from T6.
 
-- **O23 — Two permissions.** The installed app holds the camera and the
-  internet permissions and no other. This is checkable from the package
+- **O23 — Three permissions.** The installed app holds the camera, the
+  internet and the vibrate permissions and no other. This is checkable from the package
   alone. It holds no location permission, so where the user is cannot leave
   the phone.
 - **O24 — Fully offline.** With all radios off, every function in tier 2

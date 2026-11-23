@@ -1,7 +1,5 @@
 package dev.optrolley.autoroute.ui
 
-import android.os.Build
-import android.view.HapticFeedbackConstants
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +34,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -46,6 +43,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.Buzz
 import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.ScanEvent
 import dev.optrolley.autoroute.scan.BarcodeDecoder
@@ -64,7 +62,7 @@ private val MINIMAP = 120.dp
  */
 @Composable
 fun Minimap(scanner: Scanner, paused: Boolean, tick: Boolean, vm: AppViewModel, modifier: Modifier = Modifier) {
-    val view = LocalView.current
+    val buzzer = rememberBuzzer()
     Box(
         modifier
             .size(MINIMAP)
@@ -75,10 +73,7 @@ fun Minimap(scanner: Scanner, paused: Boolean, tick: Boolean, vm: AppViewModel, 
         scanner.Viewfinder(
             active = !paused,
             onCode = { code ->
-                view.performHapticFeedback(
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM
-                    else HapticFeedbackConstants.LONG_PRESS,
-                )
+                buzzer.buzz(Buzz.SCANNED)
                 vm.scanned(code, tick)
             },
             modifier = Modifier.fillMaxSize(),

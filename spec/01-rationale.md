@@ -1,7 +1,7 @@
 # Tier 1 — Rationale, Core Tenets, Steering
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-15
+**Last updated:** 2026-11-23
 
 ---
 
@@ -13,7 +13,7 @@ accepted it as drafted by going ahead with the build (2026-10-18); the field
 trial is where it gets tested. §4 marks which decisions were stated, which
 were inferred, and which were accepted that way. Barcode scanning (D14–D15)
 was asked for by the owner ahead of the trial and revises §3. T5, T6, D10
-and D18–D21 are the owner's direction after the first weeks of use.
+and D18–D22 are the owner's direction after the first weeks of use.
 
 ---
 
@@ -169,6 +169,7 @@ The list and the trips are never sent anywhere.
 | D20 | An item library, used at home: every item with the codes that mean it. There an item is renamed (D10) and a code is unlinked from its item, after which it is a code never seen. Each code shows its product's name and a small picture, looked up by its number when there is a connection and kept on the phone. A lookup sends the code and nothing else. Without one the library works the same and shows the number. | stated |
 | D21 | The trips kept are all of them. No trip is dropped for being old unless measurement on the phone shows it is needed; a rarely bought item is placed by old trips alone. | accepted |
 | D17 | Scanning happens inline on the list, with a small corner viewfinder the user turns on, not on a screen of its own. | stated |
+| D22 | The app may vibrate the phone: for each scan, and for adding and ticking when the user turns those on. It buzzes whatever the phone's touch-vibration setting says, since a user may keep that off for the rest of the phone and still want to feel these. | stated |
 
 ## 5. Assumptions not yet tested
 

@@ -1,7 +1,7 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-23
 
 ---
 
@@ -222,8 +222,9 @@ Then two of how the app feels, each on its own and off until turned on: a
 buzz as something is added from the add bar, and a buzz as an entry is
 ticked by hand, lighter as it is unticked. They let a tap be felt to have
 taken without looking. A scan buzzes as it is read whatever they say (F12).
-They belong to the phone, like look-ups: not part of the list, not
-recorded, not exported.
+Every buzz is felt even with the phone's touch vibration off (D22). They
+belong to the phone, like look-ups: not part of the list, not recorded, not
+exported.
 
 ## 15. Store detection (F10) — later
 

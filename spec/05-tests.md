@@ -56,7 +56,7 @@ assumption in tier 1 §5 does not hold. Diagnose before changing code.
 | O20–O22 | unit + property | No action changes a trip already on record; dropping what was learned and rebuilding from the record, and export then import, give identical presentations and confidence. |
 | O59 | unit + property | Any actions applied, the journal emptied, then more actions: every presentation as with the journal kept. |
 | O62 | unit, on fixtures | A first-build journal alone, opened by this build, and a version 1 export imported: list, every store's presentation and every code as the first build gave them. The fixtures are files the first build wrote. |
-| O23 | build check | The merged manifest requests `CAMERA` and `INTERNET` and nothing else. |
+| O23 | build check | The merged manifest requests `CAMERA`, `INTERNET` and `VIBRATE` and nothing else. |
 | O24 | instrumented | Tier 2 walkthrough with radios off; the library shows numbers. |
 | O60 | unit + property | The same actions with a catalogue that answers, one that fails and one that never returns: identical state, record and presentations. |
 | O61 | unit | A recording stand-in for the network: every request the app makes is for one code's number and carries nothing else of the user's. |

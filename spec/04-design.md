@@ -1,7 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-22
+**Last updated:** 2026-11-23
 
 ---
 
@@ -323,7 +323,8 @@ the thing it judges will share its blind spots.
   storage permission. Import only into an empty install. The file is
   version 2: state, record and journal together. A version 1 file, which is
   a journal alone, is imported by folding it (O62).
-- **The camera and internet permissions and nothing else** (D15, O23). The
+- **The camera, internet and vibrate permissions and nothing else** (D15,
+  D22, O23). The
   camera is declared as an optional feature, so a phone without one can
   still install the app. The manifest test fails on any other permission a
   library brings.
@@ -358,8 +359,8 @@ offered, never needed: a tap is quicker for most, and the list is still read
 one-handed (T2).
 
 - **Continuous.** The viewfinder accepts code after code, with a
-  haptic buzz per accepted scan (`performHapticFeedback`, which needs no
-  vibrate permission). A code is accepted again only after it has been out
+  buzz per accepted scan, made as an add's or a tick's is (§7.3, D22). A code
+  is accepted again only after it has been out
   of view for 1.5 s, so one held under the camera adds once.
 - **Aimed, not glimpsed.** The viewfinder is square, and the camera is
   given that square as one crop for the picture and for decoding, so what
@@ -477,10 +478,17 @@ suggests.
   a buzz as it makes the action, before keeping it, so it is felt with the
   tap: `add` when it makes an `Added`, not for a name already on the list;
   `setTicked` for a tick or an untick. Scans make their actions elsewhere and
-  buzz at the viewfinder already, so they never buzz twice. The screen turns
-  a buzz into `performHapticFeedback`, which needs no vibrate permission (O23)
-  and defers to the phone's touch-vibration setting: `CONFIRM`, as a scan,
-  for an add or a tick; `TOGGLE_OFF` (API 34, else `CLOCK_TICK`) for an
+  buzz at the viewfinder already, so they never buzz twice.
+- **How a buzz is made** (D22). Through the `Vibrator` service, with
+  `VIBRATE` (O23), not `performHapticFeedback`: that is touch feedback,
+  which Android drops while the phone's touch vibration is off, and since
+  API 33 an app cannot ask past the setting. The vibration's usage is media,
+  so it follows the phone's media vibration strength and its master
+  vibration switch; touch would be silenced, and the hardware-feedback and
+  physical-emulation usages are the system's. Effects are predefined, which
+  a phone without amplitude control still plays [evidence: the owner's moto
+  g56 lists `CLICK`, `HEAVY_CLICK` and `TICK` and no capabilities,
+  2026-11-23]: `HEAVY_CLICK` for a scan, an add or a tick; `TICK` for an
   untick.
 - **When a code is looked up** (F13). By hand in the library: one code, or
   every code the cache holds nothing for. By itself when a code is scanned
