@@ -26,9 +26,13 @@ import dev.optrolley.core.itemNamed
 import dev.optrolley.core.nameFor
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -58,6 +62,12 @@ data class UiState(
     /** What each scan this session did, oldest first, for the scanner to show. */
     val scans: List<ScanEvent> = emptyList(),
 )
+
+/** Which actions the phone buzzes for (F14). A scan buzzes regardless, as it is read (F12). */
+data class Buzzes(val onAdd: Boolean = false, val onTick: Boolean = false)
+
+/** An action to be felt as it is made. */
+enum class Buzz { ADDED, TICKED, UNTICKED }
 
 /**
  * A word to the user. [undo] makes what takes it back from the state when
@@ -97,6 +107,8 @@ class AppViewModel(
     catalogueCache: File? = null,
     /** Waits between look-ups; the clock says how long. */
     pause: suspend (Long) -> Unit = { delay(it) },
+    /** Where this phone's own options are kept (F14); in memory only if null. */
+    options: File? = null,
 ) : ViewModel() {
     private val _ui = MutableStateFlow(UiState())
     val ui: StateFlow<UiState> = _ui.asStateFlow()
@@ -111,7 +123,20 @@ class AppViewModel(
     /** What the library shows of the catalogue (F13). */
     val library: StateFlow<LibraryView> = lookups.view
 
+    private val deviceOptions = DeviceOptions(options)
+    private val _buzzes = MutableStateFlow(Buzzes())
+    val buzzes: StateFlow<Buzzes> = _buzzes.asStateFlow()
+
+    // Sent as the action is made, before it is kept, so it is felt with the tap. One missed loses nothing.
+    private val _buzz = MutableSharedFlow<Buzz>(extraBufferCapacity = 4, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+    val buzz: SharedFlow<Buzz> = _buzz.asSharedFlow()
+
     init {
+        viewModelScope.launch(io) {
+            val saved = Buzzes(onAdd = deviceOptions.isOn(DeviceOptions.BUZZ_ON_ADD), onTick = deviceOptions.isOn(DeviceOptions.BUZZ_ON_TICK))
+            // Unless the user has changed one meanwhile.
+            _buzzes.compareAndSet(Buzzes(), saved)
+        }
         serially {
             try {
                 book = kept.open()
@@ -135,6 +160,7 @@ class AppViewModel(
                 _ui.update { it.copy(focus = there, message = UiMessage("$n is already on the list")) }
                 return@inSteps emptyList()
             }
+            if (_buzzes.value.onAdd) _buzz.tryEmit(Buzz.ADDED)
             listOf(Observation.Added(clock(), n, quantity.clean(), note.clean()))
         },
         // A new item's id is the state's to give, since an old name may hold the obvious one (O56).
@@ -145,6 +171,7 @@ class AppViewModel(
     )
 
     fun setTicked(item: ItemKey, ticked: Boolean) = act {
+        if (_buzzes.value.onTick) _buzz.tryEmit(if (ticked) Buzz.TICKED else Buzz.UNTICKED)
         listOf(if (ticked) Observation.Ticked(clock(), item) else Observation.Unticked(clock(), item))
     }
 
@@ -229,6 +256,16 @@ class AppViewModel(
 
     /** Looking codes up, on or off: a device setting, not an action, so nothing is recorded. */
     fun setLookUps(on: Boolean) = lookups.setEnabled(on)
+
+    /** Buzzing on adding or ticking by hand: device settings too, so nothing is recorded. */
+    fun setBuzzOnAdd(on: Boolean) = setBuzz(DeviceOptions.BUZZ_ON_ADD, on) { it.copy(onAdd = on) }
+
+    fun setBuzzOnTick(on: Boolean) = setBuzz(DeviceOptions.BUZZ_ON_TICK, on) { it.copy(onTick = on) }
+
+    private fun setBuzz(name: String, on: Boolean, change: (Buzzes) -> Buzzes) {
+        _buzzes.update(change)
+        viewModelScope.launch(io) { deviceOptions.set(name, on) }
+    }
 
     // --- Scanning (F12) ---
 

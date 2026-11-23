@@ -23,6 +23,8 @@ class MainActivity : ComponentActivity() {
                     catalogue = OpenFoodFacts(OpenFoodFacts.agent(versionName(), getString(R.string.catalogue_contact))),
                     // The cache directory, so nothing fetched is ever taken for the user's own data (O47).
                     catalogueCache = File(cacheDir, CATALOGUE_DIR),
+                    // Not the cache: unlike what was fetched, these are not to come back off by themselves.
+                    options = File(filesDir, OPTIONS_DIR),
                 )
             }
         }
@@ -46,5 +48,6 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val HISTORY_FILE = "history.jsonl"
         const val CATALOGUE_DIR = "catalogue"
+        const val OPTIONS_DIR = "options"
     }
 }

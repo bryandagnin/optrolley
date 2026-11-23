@@ -2,6 +2,8 @@ package dev.optrolley.autoroute.ui
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
+import android.view.HapticFeedbackConstants
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -25,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -32,6 +35,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.optrolley.autoroute.AppViewModel
+import dev.optrolley.autoroute.Buzz
 import dev.optrolley.autoroute.R
 import dev.optrolley.autoroute.scan.Scanner
 import java.io.IOException
@@ -94,6 +98,10 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
         wasInTrip = inTrip
     }
 
+    // The phone's own touch-vibration setting has the last word: with it off, nothing is felt.
+    val view = LocalView.current
+    LaunchedEffect(vm) { vm.buzz.collect { view.performHapticFeedback(it.feedback()) } }
+
     val message = ui.message
     val undo = stringResource(R.string.undo)
     LaunchedEffect(message) {
@@ -153,4 +161,12 @@ fun OptrolleyApp(vm: AppViewModel, scanner: Scanner? = null) {
             }
         }
     }
+}
+
+/** A firm click for something done, as a scan gives (F12); for an untick, the lighter feel of switching off. */
+private fun Buzz.feedback(): Int = when (this) {
+    Buzz.ADDED, Buzz.TICKED ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) HapticFeedbackConstants.CONFIRM else HapticFeedbackConstants.LONG_PRESS
+    Buzz.UNTICKED ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) HapticFeedbackConstants.TOGGLE_OFF else HapticFeedbackConstants.CLOCK_TICK
 }

@@ -1,7 +1,7 @@
 # Tier 2 — High-Level Functional Specification
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-17
+**Last updated:** 2026-11-22
 
 ---
 
@@ -217,6 +217,13 @@ A screen of options, each with its name, a switch, and two or three
 sentences beneath saying what turning it on does. Reached from the menu.
 Whatever an option enables is hidden while it is off, not shown disabled.
 The first option is looking codes up (F13).
+
+Then two of how the app feels, each on its own and off until turned on: a
+buzz as something is added from the add bar, and a buzz as an entry is
+ticked by hand, lighter as it is unticked. They let a tap be felt to have
+taken without looking. A scan buzzes as it is read whatever they say (F12).
+They belong to the phone, like look-ups: not part of the list, not
+recorded, not exported.
 
 ## 15. Store detection (F10) — later
 

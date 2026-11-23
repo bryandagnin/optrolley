@@ -38,6 +38,7 @@ import dev.optrolley.autoroute.R
 @Composable
 fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
     val library by vm.library.collectAsStateWithLifecycle()
+    val buzzes by vm.buzzes.collectAsStateWithLifecycle()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -58,6 +59,22 @@ fun SettingsScreen(vm: AppViewModel, onBack: () -> Unit) {
                 on = library.enabled,
                 onChange = vm::setLookUps,
                 tag = Tags.SETTING_LOOK_UPS,
+            )
+            HorizontalDivider()
+            Option(
+                name = stringResource(R.string.setting_buzz_on_add),
+                description = stringResource(R.string.setting_buzz_on_add_description),
+                on = buzzes.onAdd,
+                onChange = vm::setBuzzOnAdd,
+                tag = Tags.SETTING_BUZZ_ON_ADD,
+            )
+            HorizontalDivider()
+            Option(
+                name = stringResource(R.string.setting_buzz_on_tick),
+                description = stringResource(R.string.setting_buzz_on_tick_description),
+                on = buzzes.onTick,
+                onChange = vm::setBuzzOnTick,
+                tag = Tags.SETTING_BUZZ_ON_TICK,
             )
             HorizontalDivider()
         }

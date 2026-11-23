@@ -112,6 +112,8 @@ object Tags {
 
     const val SETTINGS = "settings"
     const val SETTING_LOOK_UPS = "setting-look-ups"
+    const val SETTING_BUZZ_ON_ADD = "setting-buzz-on-add"
+    const val SETTING_BUZZ_ON_TICK = "setting-buzz-on-tick"
 }
 
 /**

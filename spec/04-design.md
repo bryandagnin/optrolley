@@ -1,7 +1,7 @@
 # Tier 4 — Low-Level Design and Implementation Plan
 
 **Date:** 2026-10-09
-**Last updated:** 2026-11-17
+**Last updated:** 2026-11-22
 
 ---
 
@@ -470,6 +470,18 @@ suggests.
   While it is off the library shows numbers and no look-up controls, and a
   scan in Add mode looks nothing up. The library's button to clear what was
   fetched is shown whenever anything has been.
+- **Buzzing on adding and on ticking** (F14) is two more device settings,
+  each a file under `options/` in the app's files, present while on: not the
+  cache, since unlike what was fetched they should not turn off by
+  themselves, and not the state, so not in the export. The view model sends
+  a buzz as it makes the action, before keeping it, so it is felt with the
+  tap: `add` when it makes an `Added`, not for a name already on the list;
+  `setTicked` for a tick or an untick. Scans make their actions elsewhere and
+  buzz at the viewfinder already, so they never buzz twice. The screen turns
+  a buzz into `performHapticFeedback`, which needs no vibrate permission (O23)
+  and defers to the phone's touch-vibration setting: `CONFIRM`, as a scan,
+  for an add or a tick; `TOGGLE_OFF` (API 34, else `CLOCK_TICK`) for an
+  untick.
 - **When a code is looked up** (F13). By hand in the library: one code, or
   every code the cache holds nothing for. By itself when a code is scanned
   in Add mode, named for the first time or not, and the cache holds nothing

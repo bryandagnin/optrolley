@@ -107,6 +107,10 @@
     <string name="settings">Settings</string>
     <string name="setting_look_ups">Look up barcodes</string>
     <string name="setting_look_ups_description">Shows each barcode’s product name and picture in Items and barcodes. Only the barcode’s number is sent, to Open Food Facts (openfoodfacts.org); nothing from your list, items, stores or trips is. What comes back is under the Open Database License, with pictures under CC BY-SA, and is kept on this phone.</string>
+    <string name="setting_buzz_on_add">Buzz when adding</string>
+    <string name="setting_buzz_on_add_description">The phone gives a short buzz as something is added from the add bar. It is felt only while touch vibration is on in the phone’s own settings. A scanned barcode buzzes whether this is on or not.</string>
+    <string name="setting_buzz_on_tick">Buzz when ticking</string>
+    <string name="setting_buzz_on_tick_description">The phone gives a short buzz as an entry is ticked, and a lighter one as it is unticked, so you can feel it took without looking. It is felt only while touch vibration is on in the phone’s own settings.</string>
 
     <!-- Routing method and lab -->
     <string name="routing">Routing</string>
